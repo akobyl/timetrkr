@@ -1,1 +1,165 @@
-<p>Hi</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeTrkr</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .time-picker {
+            display: flex;
+            align-items: center;
+        }
+        .time-picker button {
+            padding: 0.25rem 0.5rem;
+        }
+        .time-display {
+            width: 80px;
+            text-align: center;
+            margin: 0 0.5rem;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 2rem;
+        }
+        .auth-container {
+            max-width: 400px;
+            margin: 5rem auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div v-if="!isAuthenticated" class="auth-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">TimeTrkr Login</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" v-if="authError">{{ authError }}</div>
+                    <form @submit.prevent="login">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" v-model="loginForm.username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" v-model="loginForm.password" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                            <button type="button" class="btn btn-outline-secondary" @click="showRegisterForm = !showRegisterForm">
+                                {{ showRegisterForm ? 'Back to Login' : 'Register' }}
+                            </button>
+                        </div>
+                    </form>
+
+                    <div v-if="showRegisterForm" class="mt-4">
+                        <h4 class="text-center">Register</h4>
+                        <form @submit.prevent="register">
+                            <div class="mb-3">
+                                <label for="reg-username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="reg-username" v-model="registerForm.username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reg-password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="reg-password" v-model="registerForm.password" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">Register</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>TimeTrkr</h1>
+                <button class="btn btn-outline-danger" @click="logout">Logout</button>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Add Time Entry</h3>
+                </div>
+                <div class="card-body">
+                    <form @submit.prevent="saveTimeEntry">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="date" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="date" v-model="currentEntry.date" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Start Time</label>
+                                <div class="time-picker">
+                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('start', -15)">-</button>
+                                    <input type="time" class="form-control time-display" v-model="currentEntry.startTime" required>
+                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('start', 15)">+</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Time</label>
+                                <div class="time-picker">
+                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('end', -15)">-</button>
+                                    <input type="time" class="form-control time-display" v-model="currentEntry.endTime" required>
+                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('end', 15)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Save Time Entry</button>
+                            <button type="button" class="btn btn-outline-secondary" @click="resetForm">Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>Time Entries</h3>
+                    <div>
+                        <input type="date" class="form-control" v-model="filterDate" @change="loadTimeEntries">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div v-if="timeEntries.length === 0" class="text-center py-4">
+                        <p class="text-muted">No time entries found for this date.</p>
+                    </div>
+                    <table v-else class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="entry in timeEntries" :key="entry.id">
+                                <td>{{ formatDate(entry.date) }}</td>
+                                <td>{{ formatTime(entry.start_time) }}</td>
+                                <td>{{ formatTime(entry.end_time) }}</td>
+                                <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
