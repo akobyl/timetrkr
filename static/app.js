@@ -1,7 +1,7 @@
 // Wait for the DOM to be fully loaded before creating the Vue app
 // Utility functions for date calculations
 const getDateRanges = {
-    // Get the start of the current week (Monday)
+    // Get the start and end of the current week (Monday through Sunday)
     getCurrentWeekRange() {
         const today = new Date();
         const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
@@ -15,18 +15,25 @@ const getDateRanges = {
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - daysToSubtract);
         
-        // Reset the time part to ensure consistent comparison
+        // Calculate end of week (Sunday)
+        // If today is already Sunday, use today
+        // Otherwise, add days needed to reach Sunday
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6); // Add 6 days to Monday to get to Sunday
+        
+        // Reset the time parts to ensure consistent comparison
         startOfWeek.setHours(0, 0, 0, 0);
+        endOfWeek.setHours(23, 59, 59, 999);
         
         // Format as YYYY-MM-DD strings
         const startStr = startOfWeek.toISOString().split('T')[0];
-        const endStr = today.toISOString().split('T')[0];
+        const endStr = endOfWeek.toISOString().split('T')[0];
         
         return {
             start: startStr,
             end: endStr,
             startDate: startOfWeek,
-            endDate: today
+            endDate: endOfWeek
         };
     }
 };
@@ -203,13 +210,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.todaySummary = todaySummaryResponse.data;
                     console.log('Today summary:', this.todaySummary);
                     
-                    // Get the current week's date range (Monday to today)
+                    // Get the current week's date range (Monday to Sunday)
                     const weekRange = getDateRanges.getCurrentWeekRange();
                     const startOfWeekStr = weekRange.start;
+                    const endOfWeekStr = weekRange.end;
                     
-                    console.log(`Current week range: ${startOfWeekStr} to ${today}`);
+                    console.log(`Full week range: ${startOfWeekStr} to ${endOfWeekStr}`);
                     console.log(`Week start: ${weekRange.startDate.toDateString()}`);
-                    console.log(`Today: ${weekRange.endDate.toDateString()}`);
+                    console.log(`Week end: ${weekRange.endDate.toDateString()}`);
                     
                     // Load all entries (no date filter) then filter client-side
                     const allEntriesResponse = await axios.get('/time-entries/', {
@@ -223,14 +231,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log(`Entry: date=${entry.date}, start=${entry.start_time}, end=${entry.end_time}`);
                     }
                     
-                    // Filter entries from this week and sort by date
+                    // Filter entries from the full week and sort by date
                     this.weekEntries = allEntriesResponse.data
                         .filter(entry => {
                             const entryDate = String(entry.date);
-                            console.log(`Entry date: ${entryDate}, Week range: ${startOfWeekStr} - ${today}`);
+                            console.log(`Entry date: ${entryDate}, Week range: ${startOfWeekStr} - ${endOfWeekStr}`);
                             
                             // String comparison for ISO formatted dates (YYYY-MM-DD)
-                            const isInWeek = entryDate >= startOfWeekStr && entryDate <= today;
+                            const isInWeek = entryDate >= startOfWeekStr && entryDate <= endOfWeekStr;
                             console.log(`- In week: ${isInWeek}`);
                             return isInWeek;
                         })
@@ -244,16 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     console.log(`Filtered to ${this.weekEntries.length} entries for this week:`, this.weekEntries);
                     
-                    // Get weekly summary using the date range
+                    // Get weekly summary for the full week
                     const weekSummaryResponse = await axios.get('/time-summary/', {
                         headers: { Authorization: `Bearer ${token}` },
                         params: { 
                             start_date: startOfWeekStr,
-                            end_date: today
+                            end_date: endOfWeekStr
                         }
                     });
                     
-                    console.log(`Weekly summary request for ${startOfWeekStr} to ${today}`);
+                    console.log(`Weekly summary request for full week: ${startOfWeekStr} to ${endOfWeekStr}`);
                     
                     this.weekSummary = weekSummaryResponse.data;
                     console.log('Week summary:', this.weekSummary);

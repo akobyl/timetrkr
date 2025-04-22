@@ -186,10 +186,12 @@
                             <h3>This Week's Time</h3>
                             <div v-if="weekSummary" class="bg-light p-2 rounded">
                                 <strong>Total: {{ formatMinutes(weekSummary.total_minutes) }}</strong>
-                                <small class="d-block text-muted">
-                                    {{ formatDate(weekSummary.start_date) }} - {{ formatDate(weekSummary.end_date) }}
-                                </small>
-                                <small class="d-block text-muted">{{ weekSummary.days_with_entries }} days with entries</small>
+                                <div class="d-flex align-items-center mt-1">
+                                    <span class="badge bg-primary me-1">{{ formatDate(weekSummary.start_date) }}</span>
+                                    <span class="small">to</span>
+                                    <span class="badge bg-primary ms-1">{{ formatDate(weekSummary.end_date) }}</span>
+                                </div>
+                                <small class="d-block text-muted mt-1">{{ weekSummary.days_with_entries }} days with entries</small>
                             </div>
                         </div>
                         <div class="card-body">
