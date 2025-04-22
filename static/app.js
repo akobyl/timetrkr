@@ -306,6 +306,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
             },
             
+            setTimeToNow(type) {
+                const timeField = type === 'start' ? 'startTime' : 'endTime';
+                const now = new Date();
+                
+                // Get hours and minutes
+                let hours = now.getHours();
+                let minutes = now.getMinutes();
+                
+                // Round to nearest 15 minutes
+                minutes = Math.round(minutes / 15) * 15;
+                
+                // Adjust if minutes rolled over to 60
+                if (minutes === 60) {
+                    minutes = 0;
+                    hours = (hours + 1) % 24;  // Ensure we don't go past 24 hours
+                }
+                
+                // Format back to 24-hour format (HH:MM)
+                this.currentEntry[timeField] = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                
+                console.log(`Set ${type} time to current time (rounded to nearest 15 min): ${this.currentEntry[timeField]}`);
+            },
+            
             formatDate(dateStr) {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString();
