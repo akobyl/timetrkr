@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const app = Vue.createApp({
         data() {
             return {
+                // Auth state
                 isAuthenticated: false,
                 authError: null,
                 showRegisterForm: false,
@@ -46,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: '',
                     password: ''
                 },
+                
+                // UI state
+                activeTab: 'dashboard',
+                
+                // Dashboard tab
                 currentEntry: {
                     date: new Date().toISOString().split('T')[0],
                     startTime: '09:00',  // 9:00 AM in 24-hour format
@@ -56,7 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 filterDate: new Date().toISOString().split('T')[0],
                 editingEntry: null,
                 todaySummary: null,
-                weekSummary: null
+                weekSummary: null,
+                
+                // All Entries tab
+                allTimeEntries: [],
+                filterMonth: new Date().toISOString().slice(0, 7),  // YYYY-MM format
+                editingTimeEntry: null,
+                totalMinutesForAllEntries: 0,
+                uniqueDaysForAllEntries: 0
             };
         },
         mounted() {
@@ -65,6 +78,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (token) {
                 this.isAuthenticated = true;
                 this.loadTimeEntries();
+                // Only load all entries if we're on that tab to save bandwidth
+                if (this.activeTab === 'allEntries') {
+                    this.loadAllTimeEntries();
+                }
+            }
+            
+            // Add a watcher for tab changes to load data when tab changes
+            this.$watch('activeTab', (newTab) => {
+                if (newTab === 'allEntries' && this.isAuthenticated) {
+                    this.loadAllTimeEntries();
+                } else if (newTab === 'dashboard' && this.isAuthenticated) {
+                    this.loadTimeEntries();
+                }
+            });
+        },
+        
+        // Computed properties
+        computed: {
+            // Simple property to ensure entries display
+            displayEntries() {
+                // Return the array or empty array if it's not valid
+                const entries = this.allTimeEntries;
+                console.log("Computing displayEntries:", entries);
+                return Array.isArray(entries) ? entries : [];
             }
         },
         methods: {
@@ -122,10 +159,18 @@ document.addEventListener('DOMContentLoaded', () => {
             logout() {
                 localStorage.removeItem('token');
                 this.isAuthenticated = false;
+                
+                // Clear all data
                 this.todayEntries = [];
                 this.weekEntries = [];
                 this.todaySummary = null;
                 this.weekSummary = null;
+                this.allTimeEntries = [];
+                this.totalMinutesForAllEntries = 0;
+                this.uniqueDaysForAllEntries = 0;
+                
+                // Reset to dashboard tab
+                this.activeTab = 'dashboard';
             },
             
             async loadTimeEntries() {
@@ -246,8 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     this.resetForm();
+                    
                     // Force a complete reload of all time entries and summaries
                     await this.loadTimeEntries();
+                    
+                    // If All Entries tab is visible, update it too
+                    if (this.activeTab === 'allEntries') {
+                        await this.loadAllTimeEntries();
+                    }
                 } catch (error) {
                     console.error('Error saving time entry:', error);
                     if (error.response?.status === 401) {
@@ -267,8 +318,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     
-                    // Force a complete reload of all time entries and summaries
-                    await this.loadTimeEntries();
+                    // Reload data based on active tab
+                    if (this.activeTab === 'dashboard') {
+                        await this.loadTimeEntries();
+                    } else if (this.activeTab === 'allEntries') {
+                        await this.loadAllTimeEntries();
+                    }
+                    
+                    // If we're in All Entries tab but need to update Dashboard data too
+                    if (this.activeTab === 'allEntries') {
+                        await this.loadTimeEntries();
+                    }
                 } catch (error) {
                     console.error('Error deleting time entry:', error);
                     if (error.response?.status === 401) {
@@ -356,6 +416,241 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hours = Math.floor(durationMinutes / 60);
                 const mins = durationMinutes % 60;
                 return `${hours}h ${mins}m`;
+            },
+            
+            // --- All Entries Tab Methods ---
+            
+            async loadAllTimeEntries() {
+                try {
+                    // Reset all entries to a clean array first
+                    this.allTimeEntries = [];
+                    this.totalMinutesForAllEntries = 0;
+                    this.uniqueDaysForAllEntries = 0;
+                    
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+                    
+                    console.log(`Loading all time entries for ${this.filterMonth}...`);
+                    
+                    // Simplify by making a direct API call
+                    const response = await axios.get('/time-entries/', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    // Get the raw data
+                    const rawEntries = response.data;
+                    console.log(`Loaded ${rawEntries.length} entries from API:`, rawEntries);
+                    
+                    // Filter and prepare entries - simplified code
+                    let processedEntries = rawEntries;
+                    
+                    // Filter by month if needed
+                    if (this.filterMonth && this.filterMonth.length > 0) {
+                        processedEntries = rawEntries.filter(entry => {
+                            // Ensure we have a string for comparison
+                            const entryDate = String(entry.date || '');
+                            const result = entryDate.startsWith(this.filterMonth);
+                            console.log(`Entry ${entry.id}: ${entryDate} matches ${this.filterMonth}? ${result}`);
+                            return result;
+                        });
+                    }
+                    
+                    // Group by date and sort (newest first)
+                    processedEntries.sort((a, b) => {
+                        // First compare by date (newest first)
+                        if (a.date !== b.date) {
+                            return String(a.date) < String(b.date) ? 1 : -1;
+                        }
+                        // Then by start time (earliest first)
+                        return String(a.start_time) > String(b.start_time) ? 1 : -1;
+                    });
+                    
+                    // Calculate totals
+                    let totalMinutes = 0;
+                    const uniqueDays = new Set();
+                    
+                    processedEntries.forEach(entry => {
+                        // Track unique days
+                        if (entry.date) {
+                            uniqueDays.add(entry.date);
+                        }
+                        
+                        // Calculate duration if we have times
+                        if (entry.start_time && entry.end_time) {
+                            const [startHours, startMins] = entry.start_time.split(':').map(Number);
+                            const [endHours, endMins] = entry.end_time.split(':').map(Number);
+                            
+                            let duration = (endHours * 60 + endMins) - (startHours * 60 + startMins);
+                            if (duration < 0) duration += 24 * 60;
+                            
+                            totalMinutes += duration;
+                        }
+                    });
+                    
+                    // Update our data properties in one go
+                    this.totalMinutesForAllEntries = totalMinutes;
+                    this.uniqueDaysForAllEntries = uniqueDays.size;
+                    this.allTimeEntries = processedEntries; 
+                    
+                    console.log(`Final processed entries: ${this.allTimeEntries.length}`);
+                    
+                    // Force a UI update
+                    this.$forceUpdate();
+                    
+                } catch (error) {
+                    console.error('Error loading all time entries:', error);
+                    if (error.response?.status === 401) {
+                        this.logout();
+                    }
+                }
+            },
+            
+            calculateTotalsForAllEntries() {
+                let totalMinutes = 0;
+                const uniqueDays = new Set();
+                
+                this.allTimeEntries.forEach(entry => {
+                    // Parse times
+                    const [startHours, startMins] = entry.start_time.split(':').map(Number);
+                    const [endHours, endMins] = entry.end_time.split(':').map(Number);
+                    
+                    // Calculate duration
+                    let durationMinutes = (endHours * 60 + endMins) - (startHours * 60 + startMins);
+                    if (durationMinutes < 0) durationMinutes += 24 * 60; // Handle overnight
+                    
+                    // Add to total
+                    totalMinutes += durationMinutes;
+                    
+                    // Add date to unique days set
+                    uniqueDays.add(entry.date);
+                });
+                
+                this.totalMinutesForAllEntries = totalMinutes;
+                this.uniqueDaysForAllEntries = uniqueDays.size;
+            },
+            
+            debugShowEntries() {
+                console.log("=== DEBUG ENTRIES ===");
+                console.log("Active Tab:", this.activeTab);
+                console.log("All Entries Length:", this.allTimeEntries.length);
+                if (this.allTimeEntries.length > 0) {
+                    console.log("First Entry:", this.allTimeEntries[0]);
+                    console.log("Entry Type:", typeof this.allTimeEntries);
+                    
+                    // Create a temporary div to display entries
+                    const div = document.createElement('div');
+                    div.style.position = 'fixed';
+                    div.style.top = '10px';
+                    div.style.right = '10px';
+                    div.style.backgroundColor = 'white';
+                    div.style.padding = '20px';
+                    div.style.border = '1px solid black';
+                    div.style.zIndex = '9999';
+                    div.style.maxHeight = '80vh';
+                    div.style.overflow = 'auto';
+                    
+                    // Add close button
+                    const closeBtn = document.createElement('button');
+                    closeBtn.innerText = 'Close';
+                    closeBtn.onclick = () => document.body.removeChild(div);
+                    div.appendChild(closeBtn);
+                    
+                    // Add entries
+                    const entriesInfo = document.createElement('pre');
+                    entriesInfo.textContent = JSON.stringify(this.allTimeEntries, null, 2);
+                    div.appendChild(entriesInfo);
+                    
+                    document.body.appendChild(div);
+                }
+                
+                // Manually try to refresh the UI
+                this.$forceUpdate();
+            },
+            
+            editTimeEntry(entry) {
+                console.log("Editing entry:", entry);
+                
+                // Create a copy of the entry for editing
+                this.editingTimeEntry = {
+                    id: entry.id,
+                    date: entry.date,
+                    start_time: entry.start_time,
+                    end_time: entry.end_time
+                };
+                
+                // Open the modal using Bootstrap (with a small delay to ensure DOM is updated)
+                this.$nextTick(() => {
+                    try {
+                        const modalEl = document.getElementById('editEntryModal');
+                        if (!modalEl) {
+                            console.error("Modal element not found!");
+                            return;
+                        }
+                        const modal = new bootstrap.Modal(modalEl);
+                        modal.show();
+                    } catch (error) {
+                        console.error("Error showing modal:", error);
+                    }
+                });
+            },
+            
+            async updateTimeEntry() {
+                try {
+                    console.log("Saving updated entry:", this.editingTimeEntry);
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+                    
+                    const payload = {
+                        date: this.editingTimeEntry.date,
+                        start_time: this.editingTimeEntry.start_time,
+                        end_time: this.editingTimeEntry.end_time
+                    };
+                    
+                    const response = await axios.put(`/time-entries/${this.editingTimeEntry.id}`, payload, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    console.log("Update response:", response.data);
+                    
+                    try {
+                        // Close the modal (if it exists)
+                        const modalEl = document.getElementById('editEntryModal');
+                        if (modalEl) {
+                            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                            if (modalInstance) {
+                                modalInstance.hide();
+                            } else {
+                                console.warn("Modal instance not found");
+                                // Try to hide it manually
+                                modalEl.classList.remove('show');
+                                modalEl.style.display = 'none';
+                                document.body.classList.remove('modal-open');
+                                const backdrop = document.querySelector('.modal-backdrop');
+                                if (backdrop) backdrop.remove();
+                            }
+                        }
+                    } catch (modalError) {
+                        console.error("Error closing modal:", modalError);
+                    }
+                    
+                    // Reload data based on which tab is active
+                    console.log("Reloading data after update");
+                    if (this.activeTab === 'allEntries') {
+                        await this.loadAllTimeEntries();
+                    }
+                    
+                    // Always reload dashboard data to keep it in sync
+                    await this.loadTimeEntries();
+                    
+                    // Clear editing state
+                    this.editingTimeEntry = null;
+                    
+                } catch (error) {
+                    console.error('Error updating time entry:', error);
+                    if (error.response?.status === 401) {
+                        this.logout();
+                    }
+                }
             }
         }
     });

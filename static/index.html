@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TimeTrkr</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
@@ -89,10 +90,21 @@
                 <button class="btn btn-outline-danger" @click="logout">Logout</button>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3>Add Time Entry</h3>
-                </div>
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link" :class="{'active': activeTab === 'dashboard'}" href="#" @click.prevent="activeTab = 'dashboard'">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{'active': activeTab === 'allEntries'}" href="#" @click.prevent="activeTab = 'allEntries'">All Entries</a>
+                </li>
+            </ul>
+
+            <!-- Dashboard Tab -->
+            <div v-if="activeTab === 'dashboard'">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>Add Time Entry</h3>
+                    </div>
                 <div class="card-body">
                     <form @submit.prevent="saveTimeEntry">
                         <div class="row mb-3">
@@ -206,9 +218,103 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- All Entries Tab - Clean Version -->
+            <div v-else>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>All Time Entries</h2>
+                    <div>
+                        <input type="month" class="form-control" v-model="filterMonth" @change="loadAllTimeEntries">
+                    </div>
+                </div>
+                
+                <!-- Clean entries list -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Time Entries ({{ allTimeEntries.length }})</h5>
+                            <button class="btn btn-sm btn-outline-primary" @click="loadAllTimeEntries">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Empty state -->
+                        <div v-if="allTimeEntries.length === 0" class="text-center py-5">
+                            <div class="text-muted mb-3">
+                                <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
+                            </div>
+                            <p class="text-muted">No time entries found for this period.</p>
+                            <button class="btn btn-outline-primary" @click="loadAllTimeEntries">Refresh</button>
+                        </div>
+                        
+                        <!-- List of entries -->
+                        <div v-else class="list-group list-group-flush">
+                            <div v-for="entry in allTimeEntries" :key="entry.id" class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-primary me-2">{{ formatDate(entry.date) }}</span>
+                                            <span class="text-muted">{{ formatTime(entry.start_time) }} - {{ formatTime(entry.end_time) }}</span>
+                                        </div>
+                                        <div class="mt-1">
+                                            <span class="badge bg-light text-dark">{{ calculateDuration(entry.start_time, entry.end_time) }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Summary Info -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="h6 text-muted">Total Time</div>
+                                <div class="h4">{{ formatMinutes(totalMinutesForAllEntries) }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="h6 text-muted">Total Entries</div>
+                                <div class="h4">{{ allTimeEntries.length }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="h6 text-muted">Days Worked</div>
+                                <div class="h4">{{ uniqueDaysForAllEntries }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Edit Modal - Placed outside main app to prevent nesting issues -->
+    <div class="modal fade" id="editEntryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Time Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Edit entry form will go here</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS for modal support -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>
