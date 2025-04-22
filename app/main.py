@@ -78,7 +78,12 @@ def read_time_entries(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    return crud.get_time_entries(db=db, user_id=current_user.id, entry_date=entry_date)
+    print(f"Getting time entries for user {current_user.id}, date filter: {entry_date}")
+    entries = crud.get_time_entries(db=db, user_id=current_user.id, entry_date=entry_date)
+    print(f"Found {len(entries)} entries")
+    for entry in entries:
+        print(f"Entry: id={entry.id}, date={entry.date}, start={entry.start_time}, end={entry.end_time}")
+    return entries
 
 
 @app.put("/time-entries/{time_entry_id}", response_model=schemas.TimeEntry)
@@ -111,6 +116,36 @@ def delete_time_entry(
     if not success:
         raise HTTPException(status_code=404, detail="Time entry not found")
     return None
+
+
+@app.get("/time-summary/", response_model=schemas.TimeSummary)
+def get_time_summary(
+    start_date: date,
+    end_date: date,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Get a summary of time entries within a date range.
+    Returns total minutes, entry count, and days with entries.
+    """
+    print(f"Getting time summary for user {current_user.id}, date range: {start_date} to {end_date}")
+    
+    if start_date > end_date:
+        raise HTTPException(
+            status_code=400, 
+            detail="Start date cannot be after end date"
+        )
+    
+    summary = crud.get_time_summary(
+        db=db, 
+        user_id=current_user.id, 
+        start_date=start_date, 
+        end_date=end_date
+    )
+    
+    print(f"Time summary results: {summary}")
+    return summary
 
 
 @app.get("/api/hello")

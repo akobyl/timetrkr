@@ -122,39 +122,79 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3>Time Entries</h3>
-                    <div>
-                        <input type="date" class="form-control" v-model="filterDate" @change="loadTimeEntries">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3>Today's Time</h3>
+                            <div v-if="todaySummary" class="bg-light p-2 rounded">
+                                <strong>Total: {{ formatMinutes(todaySummary.total_minutes) }}</strong>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="todayEntries.length === 0" class="text-center py-4">
+                                <p class="text-muted">No time entries found for today.</p>
+                            </div>
+                            <table v-else class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Duration</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="entry in todayEntries" :key="entry.id">
+                                        <td>{{ formatTime(entry.start_time) }}</td>
+                                        <td>{{ formatTime(entry.end_time) }}</td>
+                                        <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">Delete</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div v-if="timeEntries.length === 0" class="text-center py-4">
-                        <p class="text-muted">No time entries found for this date.</p>
+                
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3>This Week's Time</h3>
+                            <div v-if="weekSummary" class="bg-light p-2 rounded">
+                                <strong>Total: {{ formatMinutes(weekSummary.total_minutes) }}</strong>
+                                <small class="d-block text-muted">
+                                    {{ formatDate(weekSummary.start_date) }} - {{ formatDate(weekSummary.end_date) }}
+                                </small>
+                                <small class="d-block text-muted">{{ weekSummary.days_with_entries }} days with entries</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="weekEntries.length === 0" class="text-center py-4">
+                                <p class="text-muted">No time entries found for this week.</p>
+                            </div>
+                            <table v-else class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="entry in weekEntries" :key="entry.id">
+                                        <td>{{ formatDate(entry.date) }}</td>
+                                        <td>{{ formatTime(entry.start_time) }}</td>
+                                        <td>{{ formatTime(entry.end_time) }}</td>
+                                        <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <table v-else class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Start Time</th>
-                                <th>End Time</th>
-                                <th>Duration</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="entry in timeEntries" :key="entry.id">
-                                <td>{{ formatDate(entry.date) }}</td>
-                                <td>{{ formatTime(entry.start_time) }}</td>
-                                <td>{{ formatTime(entry.end_time) }}</td>
-                                <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>

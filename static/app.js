@@ -1,4 +1,36 @@
 // Wait for the DOM to be fully loaded before creating the Vue app
+// Utility functions for date calculations
+const getDateRanges = {
+    // Get the start of the current week (Monday)
+    getCurrentWeekRange() {
+        const today = new Date();
+        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+        
+        // Calculate days to subtract to get to Monday
+        // If today is Sunday (0), go back 6 days
+        // If today is Monday (1), go back 0 days, etc.
+        const daysToSubtract = currentDay === 0 ? 6 : currentDay - 1;
+        
+        // Create a new date object for start of week (Monday)
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - daysToSubtract);
+        
+        // Reset the time part to ensure consistent comparison
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        // Format as YYYY-MM-DD strings
+        const startStr = startOfWeek.toISOString().split('T')[0];
+        const endStr = today.toISOString().split('T')[0];
+        
+        return {
+            start: startStr,
+            end: endStr,
+            startDate: startOfWeek,
+            endDate: today
+        };
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const app = Vue.createApp({
         data() {
@@ -16,12 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 currentEntry: {
                     date: new Date().toISOString().split('T')[0],
-                    startTime: '09:00',
-                    endTime: '17:00'
+                    startTime: '09:00',  // 9:00 AM in 24-hour format
+                    endTime: '17:00'     // 5:00 PM in 24-hour format
                 },
-                timeEntries: [],
+                todayEntries: [],
+                weekEntries: [],
                 filterDate: new Date().toISOString().split('T')[0],
-                editingEntry: null
+                editingEntry: null,
+                todaySummary: null,
+                weekSummary: null
             };
         },
         mounted() {
@@ -87,25 +122,97 @@ document.addEventListener('DOMContentLoaded', () => {
             logout() {
                 localStorage.removeItem('token');
                 this.isAuthenticated = false;
-                this.timeEntries = [];
+                this.todayEntries = [];
+                this.weekEntries = [];
+                this.todaySummary = null;
+                this.weekSummary = null;
             },
             
             async loadTimeEntries() {
                 try {
+                    console.log('Loading time entries and summaries...');
                     const token = localStorage.getItem('token');
                     if (!token) return;
                     
-                    const params = {};
-                    if (this.filterDate) {
-                        params.entry_date = this.filterDate;
-                    }
+                    // Get today's date
+                    const today = new Date().toISOString().split('T')[0];
                     
-                    const response = await axios.get('/time-entries/', {
+                    // Load today's entries
+                    const todayResponse = await axios.get('/time-entries/', {
                         headers: { Authorization: `Bearer ${token}` },
-                        params
+                        params: { entry_date: today }
                     });
                     
-                    this.timeEntries = response.data;
+                    this.todayEntries = todayResponse.data;
+                    console.log(`Loaded ${this.todayEntries.length} entries for today:`, this.todayEntries);
+                    
+                    // Get today's summary
+                    const todaySummaryResponse = await axios.get('/time-summary/', {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: { 
+                            start_date: today,
+                            end_date: today
+                        }
+                    });
+                    
+                    this.todaySummary = todaySummaryResponse.data;
+                    console.log('Today summary:', this.todaySummary);
+                    
+                    // Get the current week's date range (Monday to today)
+                    const weekRange = getDateRanges.getCurrentWeekRange();
+                    const startOfWeekStr = weekRange.start;
+                    
+                    console.log(`Current week range: ${startOfWeekStr} to ${today}`);
+                    console.log(`Week start: ${weekRange.startDate.toDateString()}`);
+                    console.log(`Today: ${weekRange.endDate.toDateString()}`);
+                    
+                    // Load all entries (no date filter) then filter client-side
+                    const allEntriesResponse = await axios.get('/time-entries/', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    console.log(`Loaded ${allEntriesResponse.data.length} total entries:`, allEntriesResponse.data);
+                    
+                    // DEBUG: Let's check what entries we have for the whole week
+                    for (const entry of allEntriesResponse.data) {
+                        console.log(`Entry: date=${entry.date}, start=${entry.start_time}, end=${entry.end_time}`);
+                    }
+                    
+                    // Filter entries from this week and sort by date
+                    this.weekEntries = allEntriesResponse.data
+                        .filter(entry => {
+                            const entryDate = String(entry.date);
+                            console.log(`Entry date: ${entryDate}, Week range: ${startOfWeekStr} - ${today}`);
+                            
+                            // String comparison for ISO formatted dates (YYYY-MM-DD)
+                            const isInWeek = entryDate >= startOfWeekStr && entryDate <= today;
+                            console.log(`- In week: ${isInWeek}`);
+                            return isInWeek;
+                        })
+                        .sort((a, b) => {
+                            // Sort by date ascending and then by start time
+                            if (a.date !== b.date) {
+                                return a.date < b.date ? -1 : 1;
+                            }
+                            return a.start_time < b.start_time ? -1 : 1;
+                        });
+                    
+                    console.log(`Filtered to ${this.weekEntries.length} entries for this week:`, this.weekEntries);
+                    
+                    // Get weekly summary using the date range
+                    const weekSummaryResponse = await axios.get('/time-summary/', {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: { 
+                            start_date: startOfWeekStr,
+                            end_date: today
+                        }
+                    });
+                    
+                    console.log(`Weekly summary request for ${startOfWeekStr} to ${today}`);
+                    
+                    this.weekSummary = weekSummaryResponse.data;
+                    console.log('Week summary:', this.weekSummary);
+                    
                 } catch (error) {
                     console.error('Error loading time entries:', error);
                     if (error.response?.status === 401) {
@@ -125,6 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         end_time: this.currentEntry.endTime
                     };
                     
+                    console.log('Saving time entry:', payload);
+                    
                     if (this.editingEntry) {
                         await axios.put(`/time-entries/${this.editingEntry}`, payload, {
                             headers: { Authorization: `Bearer ${token}` }
@@ -137,7 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     this.resetForm();
-                    this.loadTimeEntries();
+                    // Force a complete reload of all time entries and summaries
+                    await this.loadTimeEntries();
                 } catch (error) {
                     console.error('Error saving time entry:', error);
                     if (error.response?.status === 401) {
@@ -157,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     
-                    this.loadTimeEntries();
+                    // Force a complete reload of all time entries and summaries
+                    await this.loadTimeEntries();
                 } catch (error) {
                     console.error('Error deleting time entry:', error);
                     if (error.response?.status === 401) {
@@ -169,8 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
             resetForm() {
                 this.currentEntry = {
                     date: new Date().toISOString().split('T')[0],
-                    startTime: '09:00',
-                    endTime: '17:00'
+                    startTime: '09:00',  // 9:00 AM in 24-hour format
+                    endTime: '17:00'     // 5:00 PM in 24-hour format
                 };
                 this.editingEntry = null;
             },
@@ -190,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newHours = Math.floor(totalMinutes / 60);
                 const newMinutes = totalMinutes % 60;
                 
-                // Format back to HH:MM
+                // Format back to 24-hour format (HH:MM)
                 this.currentEntry[timeField] = 
                     `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
             },
@@ -201,7 +312,14 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             
             formatTime(timeStr) {
+                // Ensure time is displayed in 24-hour format
                 return timeStr;
+            },
+            
+            formatMinutes(totalMinutes) {
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+                return `${hours}h ${mins}m`;
             },
             
             calculateDuration(startTime, endTime) {

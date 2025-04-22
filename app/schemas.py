@@ -44,3 +44,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+
+class TimeSummary(BaseModel):
+    start_date: date
+    end_date: date
+    total_minutes: int
+    entries_count: int
+    days_with_entries: int
