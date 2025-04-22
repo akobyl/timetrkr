@@ -594,9 +594,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             },
             
+            // Adjust time in edit mode
+            adjustEditTime(type, minutes) {
+                if (!this.editingTimeEntry) return;
+                
+                const timeField = type === 'start' ? 'start_time' : 'end_time';
+                const currentTime = this.editingTimeEntry[timeField];
+                
+                // Parse the time
+                const [hours, mins] = currentTime.split(':').map(Number);
+                
+                // Calculate new time
+                let totalMinutes = hours * 60 + mins + minutes;
+                if (totalMinutes < 0) totalMinutes = 0;
+                if (totalMinutes >= 24 * 60) totalMinutes = 24 * 60 - 1;
+                
+                const newHours = Math.floor(totalMinutes / 60);
+                const newMinutes = totalMinutes % 60;
+                
+                // Format back to 24-hour format (HH:MM)
+                this.editingTimeEntry[timeField] = 
+                    `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+            },
+            
+            // Set edit time to now
+            setEditTimeToNow(type) {
+                if (!this.editingTimeEntry) return;
+                
+                const timeField = type === 'start' ? 'start_time' : 'end_time';
+                const now = new Date();
+                
+                // Get hours and minutes
+                let hours = now.getHours();
+                let minutes = now.getMinutes();
+                
+                // Round to nearest 15 minutes
+                minutes = Math.round(minutes / 15) * 15;
+                
+                // Adjust if minutes rolled over to 60
+                if (minutes === 60) {
+                    minutes = 0;
+                    hours = (hours + 1) % 24;  // Ensure we don't go past 24 hours
+                }
+                
+                // Format back to 24-hour format (HH:MM)
+                this.editingTimeEntry[timeField] = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            },
+            
             async updateTimeEntry() {
                 try {
-                    console.log("Saving updated entry:", this.editingTimeEntry);
+                    if (!this.editingTimeEntry) return;
+                    
                     const token = localStorage.getItem('token');
                     if (!token) return;
                     
@@ -606,35 +655,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         end_time: this.editingTimeEntry.end_time
                     };
                     
-                    const response = await axios.put(`/time-entries/${this.editingTimeEntry.id}`, payload, {
+                    await axios.put(`/time-entries/${this.editingTimeEntry.id}`, payload, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     
-                    console.log("Update response:", response.data);
-                    
-                    try {
-                        // Close the modal (if it exists)
-                        const modalEl = document.getElementById('editEntryModal');
-                        if (modalEl) {
-                            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                            if (modalInstance) {
-                                modalInstance.hide();
-                            } else {
-                                console.warn("Modal instance not found");
-                                // Try to hide it manually
-                                modalEl.classList.remove('show');
-                                modalEl.style.display = 'none';
-                                document.body.classList.remove('modal-open');
-                                const backdrop = document.querySelector('.modal-backdrop');
-                                if (backdrop) backdrop.remove();
-                            }
-                        }
-                    } catch (modalError) {
-                        console.error("Error closing modal:", modalError);
+                    // Close the modal
+                    const modalEl = document.getElementById('editEntryModal');
+                    if (modalEl) {
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
                     }
                     
-                    // Reload data based on which tab is active
-                    console.log("Reloading data after update");
+                    // Reload data based on active tab
                     if (this.activeTab === 'allEntries') {
                         await this.loadAllTimeEntries();
                     }
