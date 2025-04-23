@@ -13,12 +13,14 @@
             display: flex;
             align-items: center;
             flex-wrap: wrap;
+            margin-bottom: 0.5rem;
         }
         .time-picker button {
             padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
         }
         .time-display {
-            width: 100px;
+            width: 120px;
             text-align: center;
             margin: 0 0.5rem;
         }
@@ -27,6 +29,30 @@
         }
         .time-picker .ms-2 {
             margin-left: 0.5rem;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .time-picker {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .time-picker .btn-group {
+                margin-bottom: 0.5rem;
+                width: 100%;
+                display: flex;
+            }
+            .time-picker .btn-group button {
+                flex: 1;
+            }
+            .time-display {
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+            .time-picker button.ms-2 {
+                margin-left: 0;
+                margin-top: 0.5rem;
+                width: 100%;
+            }
         }
         .container {
             max-width: 800px;
@@ -118,19 +144,31 @@
                             <div class="col-md-6">
                                 <label class="form-label">Start Time</label>
                                 <div class="time-picker">
-                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('start', -15)">-</button>
+                                    <div class="btn-group me-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', -15)">-15m</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', -5)">-5m</button>
+                                    </div>
                                     <input type="time" class="form-control time-display" v-model="currentEntry.startTime" required>
-                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('start', 15)">+</button>
-                                    <button type="button" class="btn btn-outline-secondary ms-2" @click="setTimeToNow('start')">Now</button>
+                                    <div class="btn-group ms-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', 5)">+5m</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', 15)">+15m</button>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary ms-2" @click="setTimeToNow('start')">Now</button>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">End Time</label>
                                 <div class="time-picker">
-                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('end', -15)">-</button>
+                                    <div class="btn-group me-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', -15)">-15m</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', -5)">-5m</button>
+                                    </div>
                                     <input type="time" class="form-control time-display" v-model="currentEntry.endTime" required>
-                                    <button type="button" class="btn btn-outline-secondary" @click="adjustTime('end', 15)">+</button>
-                                    <button type="button" class="btn btn-outline-secondary ms-2" @click="setTimeToNow('end')">Now</button>
+                                    <div class="btn-group ms-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', 5)">+5m</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', 15)">+15m</button>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary ms-2" @click="setTimeToNow('end')">Now</button>
                                 </div>
                             </div>
                         </div>
@@ -317,19 +355,23 @@
                         <div class="mb-3">
                             <label for="edit-start-time" class="form-label">Start Time</label>
                             <div class="input-group">
-                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('start', -15)">-</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('start', -15)">-15m</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('start', -5)">-5m</button>
                                 <input type="time" class="form-control" id="edit-start-time" v-model="editingTimeEntry.start_time" required>
-                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('start', 15)">+</button>
-                                <button type="button" class="btn btn-outline-secondary" @click="setEditTimeToNow('start')">Now</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('start', 5)">+5m</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('start', 15)">+15m</button>
+                                <button type="button" class="btn btn-outline-primary" @click="setEditTimeToNow('start')">Now</button>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="edit-end-time" class="form-label">End Time</label>
                             <div class="input-group">
-                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('end', -15)">-</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('end', -15)">-15m</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('end', -5)">-5m</button>
                                 <input type="time" class="form-control" id="edit-end-time" v-model="editingTimeEntry.end_time" required>
-                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('end', 15)">+</button>
-                                <button type="button" class="btn btn-outline-secondary" @click="setEditTimeToNow('end')">Now</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('end', 5)">+5m</button>
+                                <button type="button" class="btn btn-outline-secondary" @click="adjustEditTime('end', 15)">+15m</button>
+                                <button type="button" class="btn btn-outline-primary" @click="setEditTimeToNow('end')">Now</button>
                             </div>
                         </div>
                     </form>
