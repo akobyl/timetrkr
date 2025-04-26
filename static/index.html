@@ -236,24 +236,49 @@
                             <div v-if="weekEntries.length === 0" class="text-center py-4">
                                 <p class="text-muted">No time entries found for this week.</p>
                             </div>
-                            <table v-else class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Start Time</th>
-                                        <th>End Time</th>
-                                        <th>Duration</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="entry in weekEntries" :key="entry.id">
-                                        <td>{{ formatDate(entry.date) }}</td>
-                                        <td>{{ formatTime(entry.start_time) }}</td>
-                                        <td>{{ formatTime(entry.end_time) }}</td>
-                                        <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div v-else>
+                                <!-- Daily Totals Table -->
+                                <div class="mb-4">
+                                    <h5 class="mb-3">Daily Totals</h5>
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Total Time</th>
+                                                <th>Entries</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(dayData, dateStr) in dailyTotals" :key="dateStr">
+                                                <td><strong>{{ formatDate(dateStr) }}</strong></td>
+                                                <td><span class="badge bg-success">{{ formatMinutes(dayData.minutes) }}</span></td>
+                                                <td>{{ dayData.count }} entries</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            
+                                <!-- Detailed Entries Table -->
+                                <h5 class="mb-3">All Entries</h5>
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                            <th>Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="entry in weekEntries" :key="entry.id">
+                                            <td>{{ formatDate(entry.date) }}</td>
+                                            <td>{{ formatTime(entry.start_time) }}</td>
+                                            <td>{{ formatTime(entry.end_time) }}</td>
+                                            <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

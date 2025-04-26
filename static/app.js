@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         todayEntries: [],
         weekEntries: [],
+        dailyTotals: {}, // Store daily totals: { "2025-04-25": { minutes: 480, count: 2 } }
         filterDate: new Date().toISOString().split('T')[0],
         editingEntry: null,
         todaySummary: null,
@@ -303,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           // Filter entries from the full week and sort by date
-          this.weekEntries = allEntriesResponse.data
+          const weekFilteredEntries = allEntriesResponse.data
             .filter(entry => {
               const entryDate = String(entry.date);
 
@@ -318,8 +319,29 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               return a.start_time < b.start_time ? -1 : 1;
             });
-
-          console.log(`Filtered to ${this.weekEntries.length} entries for this week:`, this.weekEntries);
+            
+          // Set the week entries
+          this.weekEntries = weekFilteredEntries;
+          
+          // Calculate daily totals for the week
+          this.dailyTotals = {};
+          weekFilteredEntries.forEach(entry => {
+            const dateStr = entry.date;
+            if (!this.dailyTotals[dateStr]) {
+              this.dailyTotals[dateStr] = { minutes: 0, count: 0 };
+            }
+            
+            // Calculate duration
+            const [startHours, startMins] = entry.start_time.split(':').map(Number);
+            const [endHours, endMins] = entry.end_time.split(':').map(Number);
+            
+            let durationMinutes = (endHours * 60 + endMins) - (startHours * 60 + startMins);
+            if (durationMinutes < 0) durationMinutes += 24 * 60; // Handle overnight
+            
+            // Add to the daily total
+            this.dailyTotals[dateStr].minutes += durationMinutes;
+            this.dailyTotals[dateStr].count += 1;
+          });
 
           // Get weekly summary for the full week
           const weekSummaryResponse = await axios.get('/time-summary/', {
