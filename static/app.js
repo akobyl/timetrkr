@@ -382,8 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
             end_time: this.currentEntry.endTime
           };
 
-          console.log('Saving time entry:', payload);
-
           if (this.editingEntry) {
             await axios.put(`/time-entries/${this.editingEntry}`, payload, {
               headers: { Authorization: `Bearer ${token}` }
@@ -399,11 +397,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Force a complete reload of all time entries and summaries
           await this.loadTimeEntries();
-
-          // If All Entries tab is visible, update it too
-          if (this.activeTab === 'allEntries') {
-            await this.loadAllTimeEntries();
-          }
+          
+          // Always refresh the All Entries data, regardless of which tab is visible
+          await this.loadAllTimeEntries();
         } catch (error) {
           console.error('Error saving time entry:', error);
 
@@ -431,17 +427,9 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { Authorization: `Bearer ${token}` }
           });
 
-          // Reload data based on active tab
-          if (this.activeTab === 'dashboard') {
-            await this.loadTimeEntries();
-          } else if (this.activeTab === 'allEntries') {
-            await this.loadAllTimeEntries();
-          }
-
-          // If we're in All Entries tab but need to update Dashboard data too
-          if (this.activeTab === 'allEntries') {
-            await this.loadTimeEntries();
-          }
+          // Always reload both dashboard and all entries data
+          await this.loadTimeEntries();
+          await this.loadAllTimeEntries();
         } catch (error) {
           console.error('Error deleting time entry:', error);
 
@@ -755,13 +743,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) modal.hide();
           }
 
-          // Reload data based on active tab
-          if (this.activeTab === 'allEntries') {
-            await this.loadAllTimeEntries();
-          }
-
-          // Always reload dashboard data to keep it in sync
+          // Always reload both dashboard and all entries data to keep them in sync
           await this.loadTimeEntries();
+          await this.loadAllTimeEntries();
 
           // Clear editing state
           this.editingTimeEntry = null;
