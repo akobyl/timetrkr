@@ -488,7 +488,16 @@ document.addEventListener('DOMContentLoaded', () => {
       },
 
       formatDate(dateStr) {
-        const date = new Date(dateStr);
+        // Fix timezone issue by explicitly parsing the date and adjusting for timezone
+        // The input dateStr is in format YYYY-MM-DD
+        // Create a new date with the UTC time set to midnight of that day
+        const parts = dateStr.split('-');
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1; // JS months are 0-based
+        const day = parseInt(parts[2]);
+        
+        // Create date in local timezone (not UTC)
+        const date = new Date(year, month, day);
         return date.toLocaleDateString();
       },
 
