@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         todayEntries: [],
         weekEntries: [],
         dailyTotals: {}, // Store daily totals: { "2025-04-25": { minutes: 480, count: 2 } }
+        expandedDays: [], // Track which days are expanded to show entries
         filterDate: new Date().toISOString().split('T')[0],
         editingEntry: null,
         todaySummary: null,
@@ -323,6 +324,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Set the week entries
           this.weekEntries = weekFilteredEntries;
           
+          // Reset expanded days when loading new data
+          this.expandedDays = [];
+          
           // Calculate daily totals for the week
           this.dailyTotals = {};
           weekFilteredEntries.forEach(entry => {
@@ -453,6 +457,23 @@ document.addEventListener('DOMContentLoaded', () => {
           endTime: '17:00'     // 5:00 PM in 24-hour format
         };
         this.editingEntry = null;
+      },
+      
+      // Toggle display of entries for a specific day
+      toggleDayEntries(dateStr) {
+        const index = this.expandedDays.indexOf(dateStr);
+        if (index === -1) {
+          // Add to expanded list
+          this.expandedDays.push(dateStr);
+        } else {
+          // Remove from expanded list
+          this.expandedDays.splice(index, 1);
+        }
+      },
+      
+      // Get entries for a specific day
+      getDayEntries(dateStr) {
+        return this.weekEntries.filter(entry => entry.date === dateStr);
       },
 
       adjustTime(type, minutes) {

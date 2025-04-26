@@ -62,6 +62,9 @@
             max-width: 400px;
             margin: 5rem auto;
         }
+        .cursor-pointer {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -249,35 +252,43 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="(dayData, dateStr) in dailyTotals" :key="dateStr">
-                                                <td><strong>{{ formatDate(dateStr) }}</strong></td>
-                                                <td><span class="badge bg-success">{{ formatMinutes(dayData.minutes) }}</span></td>
-                                                <td>{{ dayData.count }} entries</td>
-                                            </tr>
+                                            <template v-for="(dayData, dateStr) in dailyTotals" :key="dateStr">
+                                                <tr class="cursor-pointer" @click="toggleDayEntries(dateStr)" :class="{'table-active': expandedDays.includes(dateStr)}">
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <i :class="[expandedDays.includes(dateStr) ? 'bi-chevron-down' : 'bi-chevron-right', 'me-2']"></i>
+                                                            <strong>{{ formatDate(dateStr) }}</strong>
+                                                        </div>
+                                                    </td>
+                                                    <td><span class="badge bg-success">{{ formatMinutes(dayData.minutes) }}</span></td>
+                                                    <td>{{ dayData.count }} entries</td>
+                                                </tr>
+                                                <tr v-if="expandedDays.includes(dateStr)">
+                                                    <td colspan="3" class="p-0">
+                                                        <div class="px-4 py-2 bg-light">
+                                                            <table class="table table-sm mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Start Time</th>
+                                                                        <th>End Time</th>
+                                                                        <th>Duration</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <tr v-for="entry in getDayEntries(dateStr)" :key="entry.id">
+                                                                        <td>{{ formatTime(entry.start_time) }}</td>
+                                                                        <td>{{ formatTime(entry.end_time) }}</td>
+                                                                        <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
                                         </tbody>
                                     </table>
                                 </div>
-                            
-                                <!-- Detailed Entries Table -->
-                                <h5 class="mb-3">All Entries</h5>
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Start Time</th>
-                                            <th>End Time</th>
-                                            <th>Duration</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="entry in weekEntries" :key="entry.id">
-                                            <td>{{ formatDate(entry.date) }}</td>
-                                            <td>{{ formatTime(entry.start_time) }}</td>
-                                            <td>{{ formatTime(entry.end_time) }}</td>
-                                            <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
                     </div>
