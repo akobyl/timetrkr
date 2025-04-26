@@ -273,9 +273,6 @@
                     <div class="card-header bg-light">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Time Entries ({{ allTimeEntries.length }})</h5>
-                            <button class="btn btn-sm btn-outline-primary" @click="loadAllTimeEntries">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -285,7 +282,6 @@
                                 <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
                             </div>
                             <p class="text-muted">No time entries found for this period.</p>
-                            <button class="btn btn-outline-primary" @click="loadAllTimeEntries">Refresh</button>
                         </div>
                         
                         <!-- List of entries -->

@@ -92,11 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('tokenExpiry', this.tokenExpiryTime);
 
         this.isAuthenticated = true;
+        // Load both dashboard and all entries data on startup
         this.loadTimeEntries();
-        // Only load all entries if we're on that tab to save bandwidth
-        if (this.activeTab === 'allEntries') {
-          this.loadAllTimeEntries();
-        }
+        this.loadAllTimeEntries();
       } else {
         // Check if there's a saved expiry time
         const savedExpiry = localStorage.getItem('tokenExpiry');
@@ -115,11 +113,19 @@ document.addEventListener('DOMContentLoaded', () => {
       // Add a watcher for tab changes to load data when tab changes
       this.$watch('activeTab', (newTab) => {
         if (newTab === 'allEntries' && this.isAuthenticated) {
+          // Immediately load data when switching to All Entries tab
           this.loadAllTimeEntries();
         } else if (newTab === 'dashboard' && this.isAuthenticated) {
           this.loadTimeEntries();
         }
       });
+      
+      // Set up auto-refresh for the All Entries tab (every 30 seconds)
+      setInterval(() => {
+        if (this.activeTab === 'allEntries' && this.isAuthenticated) {
+          this.loadAllTimeEntries();
+        }
+      }, 30000); // 30 seconds
     },
 
     // Computed properties
@@ -128,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
       displayEntries() {
         // Return the array or empty array if it's not valid
         const entries = this.allTimeEntries;
-        console.log("Computing displayEntries:", entries);
         return Array.isArray(entries) ? entries : [];
       }
     },
@@ -155,7 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('tokenExpiry', this.tokenExpiryTime);
 
             this.isAuthenticated = true;
+            // Load both dashboard and all entries data on restoration
             this.loadTimeEntries();
+            this.loadAllTimeEntries();
             console.log("Session restored successfully");
           } catch (error) {
             console.error("Failed to restore session:", error);
@@ -190,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('tokenExpiry', this.tokenExpiryTime);
 
           this.isAuthenticated = true;
+          // Load both dashboard and all entries data on login
           this.loadTimeEntries();
+          this.loadAllTimeEntries();
         } catch (error) {
           this.authError = error.response?.data?.detail || 'Login failed';
           console.error('Login error:', error);
@@ -258,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       async loadTimeEntries() {
         try {
-          console.log('Loading time entries and summaries...');
           const token = localStorage.getItem('token');
           if (!token) return;
 
@@ -272,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           this.todayEntries = todayResponse.data;
-          console.log(`Loaded ${this.todayEntries.length} entries for today:`, this.todayEntries);
 
           // Get today's summary
           const todaySummaryResponse = await axios.get('/time-summary/', {
@@ -284,38 +291,24 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           this.todaySummary = todaySummaryResponse.data;
-          console.log('Today summary:', this.todaySummary);
 
           // Get the current week's date range (Monday to Sunday)
           const weekRange = getDateRanges.getCurrentWeekRange();
           const startOfWeekStr = weekRange.start;
           const endOfWeekStr = weekRange.end;
 
-          console.log(`Full week range: ${startOfWeekStr} to ${endOfWeekStr}`);
-          console.log(`Week start: ${weekRange.startDate.toDateString()}`);
-          console.log(`Week end: ${weekRange.endDate.toDateString()}`);
-
           // Load all entries (no date filter) then filter client-side
           const allEntriesResponse = await axios.get('/time-entries/', {
             headers: { Authorization: `Bearer ${token}` }
           });
 
-          console.log(`Loaded ${allEntriesResponse.data.length} total entries:`, allEntriesResponse.data);
-
-          // DEBUG: Let's check what entries we have for the whole week
-          for (const entry of allEntriesResponse.data) {
-            console.log(`Entry: date=${entry.date}, start=${entry.start_time}, end=${entry.end_time}`);
-          }
-
           // Filter entries from the full week and sort by date
           this.weekEntries = allEntriesResponse.data
             .filter(entry => {
               const entryDate = String(entry.date);
-              console.log(`Entry date: ${entryDate}, Week range: ${startOfWeekStr} - ${endOfWeekStr}`);
-
+              
               // String comparison for ISO formatted dates (YYYY-MM-DD)
               const isInWeek = entryDate >= startOfWeekStr && entryDate <= endOfWeekStr;
-              console.log(`- In week: ${isInWeek}`);
               return isInWeek;
             })
             .sort((a, b) => {
@@ -337,10 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           });
 
-          console.log(`Weekly summary request for full week: ${startOfWeekStr} to ${endOfWeekStr}`);
-
           this.weekSummary = weekSummaryResponse.data;
-          console.log('Week summary:', this.weekSummary);
 
         } catch (error) {
           console.error('Error loading time entries:', error);
@@ -495,8 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Format back to 24-hour format (HH:MM)
         this.currentEntry[timeField] =
           `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-        console.log(`Set ${type} time to current time (rounded to nearest 15 min): ${this.currentEntry[timeField]}`);
       },
 
       formatDate(dateStr) {
@@ -539,18 +527,15 @@ document.addEventListener('DOMContentLoaded', () => {
           const token = localStorage.getItem('token');
           if (!token) return;
 
-          console.log(`Loading all time entries for ${this.filterMonth}...`);
-
-          // Simplify by making a direct API call
+          // Make sure to get ALL time entries by NOT supplying the date parameter
           const response = await axios.get('/time-entries/', {
             headers: { Authorization: `Bearer ${token}` }
           });
 
           // Get the raw data
           const rawEntries = response.data;
-          console.log(`Loaded ${rawEntries.length} entries from API:`, rawEntries);
-
-          // Filter and prepare entries - simplified code
+          
+          // Filter and prepare entries
           let processedEntries = rawEntries;
 
           // Filter by month if needed
@@ -558,9 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             processedEntries = rawEntries.filter(entry => {
               // Ensure we have a string for comparison
               const entryDate = String(entry.date || '');
-              const result = entryDate.startsWith(this.filterMonth);
-              console.log(`Entry ${entry.id}: ${entryDate} matches ${this.filterMonth}? ${result}`);
-              return result;
+              return entryDate.startsWith(this.filterMonth);
             });
           }
 
@@ -601,15 +584,20 @@ document.addEventListener('DOMContentLoaded', () => {
           this.uniqueDaysForAllEntries = uniqueDays.size;
           this.allTimeEntries = processedEntries;
 
-          console.log(`Final processed entries: ${this.allTimeEntries.length}`);
-
-          // Force a UI update
+          // Force a UI update if needed
           this.$forceUpdate();
 
         } catch (error) {
           console.error('Error loading all time entries:', error);
+          // Only log out for critical auth errors
           if (error.response?.status === 401) {
-            this.logout();
+            const errorMsg = error.response?.data?.detail || '';
+            if (errorMsg.includes('credentials') || errorMsg.includes('token')) {
+              console.warn('Authentication error, logging out:', errorMsg);
+              this.logout();
+            } else {
+              console.warn('Non-critical 401 error, not logging out:', errorMsg);
+            }
           }
         }
       },
@@ -638,47 +626,8 @@ document.addEventListener('DOMContentLoaded', () => {
         this.uniqueDaysForAllEntries = uniqueDays.size;
       },
 
-      debugShowEntries() {
-        console.log("=== DEBUG ENTRIES ===");
-        console.log("Active Tab:", this.activeTab);
-        console.log("All Entries Length:", this.allTimeEntries.length);
-        if (this.allTimeEntries.length > 0) {
-          console.log("First Entry:", this.allTimeEntries[0]);
-          console.log("Entry Type:", typeof this.allTimeEntries);
-
-          // Create a temporary div to display entries
-          const div = document.createElement('div');
-          div.style.position = 'fixed';
-          div.style.top = '10px';
-          div.style.right = '10px';
-          div.style.backgroundColor = 'white';
-          div.style.padding = '20px';
-          div.style.border = '1px solid black';
-          div.style.zIndex = '9999';
-          div.style.maxHeight = '80vh';
-          div.style.overflow = 'auto';
-
-          // Add close button
-          const closeBtn = document.createElement('button');
-          closeBtn.innerText = 'Close';
-          closeBtn.onclick = () => document.body.removeChild(div);
-          div.appendChild(closeBtn);
-
-          // Add entries
-          const entriesInfo = document.createElement('pre');
-          entriesInfo.textContent = JSON.stringify(this.allTimeEntries, null, 2);
-          div.appendChild(entriesInfo);
-
-          document.body.appendChild(div);
-        }
-
-        // Manually try to refresh the UI
-        this.$forceUpdate();
-      },
 
       editTimeEntry(entry) {
-        console.log("Editing entry:", entry);
-
         // Create a copy of the entry for editing
         this.editingTimeEntry = {
           id: entry.id,
