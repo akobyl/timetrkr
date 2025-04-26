@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
           this.loadTimeEntries();
         }
       });
-      
+
       // Set up auto-refresh for the All Entries tab (every 30 seconds)
       setInterval(() => {
         if (this.activeTab === 'allEntries' && this.isAuthenticated) {
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
           this.weekEntries = allEntriesResponse.data
             .filter(entry => {
               const entryDate = String(entry.date);
-              
+
               // String comparison for ISO formatted dates (YYYY-MM-DD)
               const isInWeek = entryDate >= startOfWeekStr && entryDate <= endOfWeekStr;
               return isInWeek;
@@ -473,8 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let hours = now.getHours();
         let minutes = now.getMinutes();
 
-        // Round to nearest 15 minutes
-        minutes = Math.round(minutes / 15) * 15;
+        // Round to nearest 5 minutes
+        minutes = Math.round(minutes / 5) * 5;
 
         // Adjust if minutes rolled over to 60
         if (minutes === 60) {
@@ -495,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const year = parseInt(parts[0]);
         const month = parseInt(parts[1]) - 1; // JS months are 0-based
         const day = parseInt(parts[2]);
-        
+
         // Create date in local timezone (not UTC)
         const date = new Date(year, month, day);
         return date.toLocaleDateString();
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Get the raw data
           const rawEntries = response.data;
-          
+
           // Filter and prepare entries
           let processedEntries = rawEntries;
 
