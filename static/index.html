@@ -65,6 +65,35 @@
         .cursor-pointer {
             cursor: pointer;
         }
+        /* Navigation styles */
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #3b85f3 !important;
+        }
+        .nav-link.active {
+            font-weight: bold;
+            color: #3b85f3 !important;
+        }
+        .navbar .btn {
+            border-radius: 20px;
+            padding: 5px 15px;
+        }
+        .card {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .content-view {
+            min-height: 500px;
+            padding-bottom: 2rem;
+        }
     </style>
 </head>
 <body>
@@ -113,182 +142,273 @@
             </div>
         </div>
 
-        <div v-else class="container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>TimeTrkr</h1>
-                <button class="btn btn-outline-danger" @click="logout">Logout</button>
-            </div>
-
-            <!-- No tabs needed since we only have the dashboard view now -->
-
-            <!-- Main Dashboard Content -->
-            <div>
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h3>Add Time Entry</h3>
-                    </div>
-                <div class="card-body">
-                    <form @submit.prevent="saveTimeEntry">
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="date" class="form-label">Date</label>
-                                <input type="date" class="form-control" id="date" v-model="currentEntry.date" required>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Start Time</label>
-                                <div class="time-picker">
-                                    <div class="btn-group me-2">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', -15)">-15m</button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', -5)">-5m</button>
-                                    </div>
-                                    <input type="time" class="form-control time-display" v-model="currentEntry.startTime" required>
-                                    <div class="btn-group ms-2">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', 5)">+5m</button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', 15)">+15m</button>
-                                    </div>
-                                    <button type="button" class="btn btn-outline-primary ms-2" @click="setTimeToNow('start')">Now</button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">End Time</label>
-                                <div class="time-picker">
-                                    <div class="btn-group me-2">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', -15)">-15m</button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', -5)">-5m</button>
-                                    </div>
-                                    <input type="time" class="form-control time-display" v-model="currentEntry.endTime" required>
-                                    <div class="btn-group ms-2">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', 5)">+5m</button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', 15)">+15m</button>
-                                    </div>
-                                    <button type="button" class="btn btn-outline-primary ms-2" @click="setTimeToNow('end')">Now</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Save Time Entry</button>
-                            <button type="button" class="btn btn-outline-secondary" @click="resetForm">Reset</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h3>Today's Time</h3>
-                            <div v-if="todaySummary" class="bg-light p-2 rounded">
-                                <strong>Total: {{ formatMinutes(todaySummary.total_minutes) }}</strong>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div v-if="todayEntries.length === 0" class="text-center py-4">
-                                <p class="text-muted">No time entries found for today.</p>
-                            </div>
-                            <table v-else class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Start Time</th>
-                                        <th>End Time</th>
-                                        <th>Duration</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="entry in todayEntries" :key="entry.id">
-                                        <td>{{ formatTime(entry.start_time) }}</td>
-                                        <td>{{ formatTime(entry.end_time) }}</td>
-                                        <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">Delete</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+        <div v-else>
+            <!-- Navigation Bar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+                <div class="container">
+                    <a class="navbar-brand" href="#">TimeTrkr</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" :class="{'active': activeView === 'dashboard'}" href="#" @click.prevent="activeView = 'dashboard'">
+                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="{'active': activeView === 'analysis'}" href="#" @click.prevent="activeView = 'analysis'">
+                                    <i class="bi bi-bar-chart-line me-1"></i> Analysis
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="{'active': activeView === 'history'}" href="#" @click.prevent="activeView = 'history'">
+                                    <i class="bi bi-clock-history me-1"></i> History
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="{'active': activeView === 'profile'}" href="#" @click.prevent="activeView = 'profile'">
+                                    <i class="bi bi-person me-1"></i> Profile
+                                </a>
+                            </li>
+                        </ul>
+                        <button class="btn btn-outline-danger" @click="logout">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </button>
                     </div>
                 </div>
-                
-                <div class="col-md-6">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h3>This Week's Time</h3>
-                            <div v-if="weekSummary" class="bg-light p-2 rounded">
-                                <strong>Total: {{ formatMinutes(weekSummary.total_minutes) }}</strong>
-                                <div class="d-flex align-items-center mt-1">
-                                    <span class="badge bg-primary me-1">{{ formatDate(weekSummary.start_date) }}</span>
-                                    <span class="small">to</span>
-                                    <span class="badge bg-primary ms-1">{{ formatDate(weekSummary.end_date) }}</span>
-                                </div>
-                                <small class="d-block text-muted mt-1">{{ weekSummary.days_with_entries }} days with entries</small>
+            </nav>
+
+            <div class="container">
+                <!-- Content View Container - All views will be inside this container -->
+                <div class="content-view">
+                    <!-- Dashboard View -->
+                    <div v-if="activeView === 'dashboard'">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h3>Add Time Entry</h3>
+                            </div>
+                            <div class="card-body">
+                                <form @submit.prevent="saveTimeEntry">
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label for="date" class="form-label">Date</label>
+                                            <input type="date" class="form-control" id="date" v-model="currentEntry.date" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Start Time</label>
+                                            <div class="time-picker">
+                                                <div class="btn-group me-2">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', -15)">-15m</button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', -5)">-5m</button>
+                                                </div>
+                                                <input type="time" class="form-control time-display" v-model="currentEntry.startTime" required>
+                                                <div class="btn-group ms-2">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', 5)">+5m</button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('start', 15)">+15m</button>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary ms-2" @click="setTimeToNow('start')">Now</button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">End Time</label>
+                                            <div class="time-picker">
+                                                <div class="btn-group me-2">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', -15)">-15m</button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', -5)">-5m</button>
+                                                </div>
+                                                <input type="time" class="form-control time-display" v-model="currentEntry.endTime" required>
+                                                <div class="btn-group ms-2">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', 5)">+5m</button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="adjustTime('end', 15)">+15m</button>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary ms-2" @click="setTimeToNow('end')">Now</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">Save Time Entry</button>
+                                        <button type="button" class="btn btn-outline-secondary" @click="resetForm">Reset</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div v-if="weekEntries.length === 0" class="text-center py-4">
-                                <p class="text-muted">No time entries found for this week.</p>
-                            </div>
-                            <div v-else>
-                                <!-- Daily Totals Table -->
-                                <div class="mb-4">
-                                    <h5 class="mb-3">Daily Totals</h5>
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Total Time</th>
-                                                <th>Entries</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <template v-for="(dayData, dateStr) in dailyTotals" :key="dateStr">
-                                                <tr class="cursor-pointer" @click="toggleDayEntries(dateStr)" :class="{'table-active': expandedDays.includes(dateStr)}">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h3>Today's Time</h3>
+                                        <div v-if="todaySummary" class="bg-light p-2 rounded">
+                                            <strong>Total: {{ formatMinutes(todaySummary.total_minutes) }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div v-if="todayEntries.length === 0" class="text-center py-4">
+                                            <p class="text-muted">No time entries found for today.</p>
+                                        </div>
+                                        <table v-else class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Start Time</th>
+                                                    <th>End Time</th>
+                                                    <th>Duration</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="entry in todayEntries" :key="entry.id">
+                                                    <td>{{ formatTime(entry.start_time) }}</td>
+                                                    <td>{{ formatTime(entry.end_time) }}</td>
+                                                    <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
                                                     <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <i :class="[expandedDays.includes(dateStr) ? 'bi-chevron-down' : 'bi-chevron-right', 'me-2']"></i>
-                                                            <strong>{{ formatDate(dateStr) }}</strong>
-                                                        </div>
-                                                    </td>
-                                                    <td><span class="badge bg-success">{{ formatMinutes(dayData.minutes) }}</span></td>
-                                                    <td>{{ dayData.count }} entries</td>
-                                                </tr>
-                                                <tr v-if="expandedDays.includes(dateStr)">
-                                                    <td colspan="3" class="p-0">
-                                                        <div class="px-4 py-2 bg-light">
-                                                            <table class="table table-sm mb-0">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Start Time</th>
-                                                                        <th>End Time</th>
-                                                                        <th>Duration</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    <tr v-for="entry in getDayEntries(dateStr)" :key="entry.id">
-                                                                        <td>{{ formatTime(entry.start_time) }}</td>
-                                                                        <td>{{ formatTime(entry.end_time) }}</td>
-                                                                        <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
+                                                        <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">Delete</button>
                                                     </td>
                                                 </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h3>This Week's Time</h3>
+                                        <div v-if="weekSummary" class="bg-light p-2 rounded">
+                                            <strong>Total: {{ formatMinutes(weekSummary.total_minutes) }}</strong>
+                                            <div class="d-flex align-items-center mt-1">
+                                                <span class="badge bg-primary me-1">{{ formatDate(weekSummary.start_date) }}</span>
+                                                <span class="small">to</span>
+                                                <span class="badge bg-primary ms-1">{{ formatDate(weekSummary.end_date) }}</span>
+                                            </div>
+                                            <small class="d-block text-muted mt-1">{{ weekSummary.days_with_entries }} days with entries</small>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div v-if="weekEntries.length === 0" class="text-center py-4">
+                                            <p class="text-muted">No time entries found for this week.</p>
+                                        </div>
+                                        <div v-else>
+                                            <!-- Daily Totals Table -->
+                                            <div class="mb-4">
+                                                <h5 class="mb-3">Daily Totals</h5>
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th>Total Time</th>
+                                                            <th>Entries</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template v-for="(dayData, dateStr) in dailyTotals" :key="dateStr">
+                                                            <tr class="cursor-pointer" @click="toggleDayEntries(dateStr)" :class="{'table-active': expandedDays.includes(dateStr)}">
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <i :class="[expandedDays.includes(dateStr) ? 'bi-chevron-down' : 'bi-chevron-right', 'me-2']"></i>
+                                                                        <strong>{{ formatDate(dateStr) }}</strong>
+                                                                    </div>
+                                                                </td>
+                                                                <td><span class="badge bg-success">{{ formatMinutes(dayData.minutes) }}</span></td>
+                                                                <td>{{ dayData.count }} entries</td>
+                                                            </tr>
+                                                            <tr v-if="expandedDays.includes(dateStr)">
+                                                                <td colspan="3" class="p-0">
+                                                                    <div class="px-4 py-2 bg-light">
+                                                                        <table class="table table-sm mb-0">
+                                                                            <thead>
+                                                                                <tr>
+                                                                                    <th>Start Time</th>
+                                                                                    <th>End Time</th>
+                                                                                    <th>Duration</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                <tr v-for="entry in getDayEntries(dateStr)" :key="entry.id">
+                                                                                    <td>{{ formatTime(entry.start_time) }}</td>
+                                                                                    <td>{{ formatTime(entry.end_time) }}</td>
+                                                                                    <td>{{ calculateDuration(entry.start_time, entry.end_time) }}</td>
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis View -->
+                    <div v-else-if="activeView === 'analysis'" class="my-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Time Analysis</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted text-center py-5">
+                                    <i class="bi bi-bar-chart-line" style="font-size: 3rem;"></i>
+                                    <br><br>
+                                    Time analysis features coming soon!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- History View -->
+                    <div v-else-if="activeView === 'history'" class="my-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h3>Time Entry History</h3>
+                                <div>
+                                    <input type="month" class="form-control" v-model="filterDate">
+                                </div>
+                            </div>
+                            <div class="card-body text-center py-5">
+                                <i class="bi bi-clock-history" style="font-size: 3rem;"></i>
+                                <br><br>
+                                <p class="text-muted">Complete time entry history features coming soon!</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile View -->
+                    <div v-else-if="activeView === 'profile'" class="my-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>User Profile</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center mb-4">
+                                    <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
+                                    <h4 class="mt-3">{{ localStorage.getItem('username') }}</h4>
+                                </div>
+                                
+                                <div class="border rounded p-3 mb-3">
+                                    <h5>Account Information</h5>
+                                    <p class="text-muted">User settings and preferences will be available here in a future update.</p>
+                                </div>
+                                
+                                <div class="border rounded p-3">
+                                    <h5>App Settings</h5>
+                                    <p class="text-muted">Customize application settings coming soon!</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- No other tab content needed -->
         </div>
     </div>
 

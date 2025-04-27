@@ -56,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
           password: ''
         },
 
-        // No tab state needed as there's only one view now
+        // UI state
+        activeView: 'dashboard', // Options: dashboard, analysis, history, profile
 
         // Dashboard tab
         currentEntry: {
@@ -68,13 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
         weekEntries: [],
         dailyTotals: {}, // Store daily totals: { "2025-04-25": { minutes: 480, count: 2 } }
         expandedDays: [], // Track which days are expanded to show entries
-        filterDate: new Date().toISOString().split('T')[0],
         editingEntry: null,
         todaySummary: null,
         weekSummary: null,
 
         // Edit mode state (moved from All Entries tab)
-        editingTimeEntry: null
+        editingTimeEntry: null,
+        
+        // State for other views
+        filterDate: new Date().toISOString().slice(0, 7) // YYYY-MM format for filters
       };
     },
     mounted() {
@@ -89,9 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('tokenExpiry', this.tokenExpiryTime);
 
         this.isAuthenticated = true;
-        // Load both dashboard and all entries data on startup
+        // Load dashboard data on startup
         this.loadTimeEntries();
-        this.loadAllTimeEntries();
       } else {
         // Check if there's a saved expiry time
         const savedExpiry = localStorage.getItem('tokenExpiry');
@@ -232,6 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
         this.weekEntries = [];
         this.todaySummary = null;
         this.weekSummary = null;
+        
+        // Reset to dashboard view
+        this.activeView = 'dashboard';
 
         console.log("User logged out successfully");
       },
