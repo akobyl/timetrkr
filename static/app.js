@@ -56,8 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
           password: ''
         },
 
-        // UI state
-        activeTab: 'dashboard',
+        // No tab state needed as there's only one view now
 
         // Dashboard tab
         currentEntry: {
@@ -74,12 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
         todaySummary: null,
         weekSummary: null,
 
-        // All Entries tab
-        allTimeEntries: [],
-        filterMonth: new Date().toISOString().slice(0, 7),  // YYYY-MM format
-        editingTimeEntry: null,
-        totalMinutesForAllEntries: 0,
-        uniqueDaysForAllEntries: 0
+        // Edit mode state (moved from All Entries tab)
+        editingTimeEntry: null
       };
     },
     mounted() {
@@ -112,33 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Add a watcher for tab changes to load data when tab changes
-      this.$watch('activeTab', (newTab) => {
-        if (newTab === 'allEntries' && this.isAuthenticated) {
-          // Immediately load data when switching to All Entries tab
-          this.loadAllTimeEntries();
-        } else if (newTab === 'dashboard' && this.isAuthenticated) {
-          this.loadTimeEntries();
-        }
-      });
-
-      // Set up auto-refresh for the All Entries tab (every 30 seconds)
+      // Set up auto-refresh for the dashboard (every 30 seconds)
       setInterval(() => {
-        if (this.activeTab === 'allEntries' && this.isAuthenticated) {
-          this.loadAllTimeEntries();
+        if (this.isAuthenticated) {
+          this.loadTimeEntries();
         }
       }, 30000); // 30 seconds
     },
 
-    // Computed properties
-    computed: {
-      // Simple property to ensure entries display
-      displayEntries() {
-        // Return the array or empty array if it's not valid
-        const entries = this.allTimeEntries;
-        return Array.isArray(entries) ? entries : [];
-      }
-    },
+    // No computed properties needed after removing All Entries tab
     methods: {
       // Try to restore a session from saved credentials
       async tryRestoreSession() {
@@ -162,9 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('tokenExpiry', this.tokenExpiryTime);
 
             this.isAuthenticated = true;
-            // Load both dashboard and all entries data on restoration
+            // Load dashboard data on restoration
             this.loadTimeEntries();
-            this.loadAllTimeEntries();
             console.log("Session restored successfully");
           } catch (error) {
             console.error("Failed to restore session:", error);
@@ -199,9 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('tokenExpiry', this.tokenExpiryTime);
 
           this.isAuthenticated = true;
-          // Load both dashboard and all entries data on login
+          // Load dashboard data on login
           this.loadTimeEntries();
-          this.loadAllTimeEntries();
         } catch (error) {
           this.authError = error.response?.data?.detail || 'Login failed';
           console.error('Login error:', error);
@@ -257,12 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
         this.weekEntries = [];
         this.todaySummary = null;
         this.weekSummary = null;
-        this.allTimeEntries = [];
-        this.totalMinutesForAllEntries = 0;
-        this.uniqueDaysForAllEntries = 0;
-
-        // Reset to dashboard tab
-        this.activeTab = 'dashboard';
 
         console.log("User logged out successfully");
       },
@@ -399,11 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
           this.resetForm();
 
-          // Force a complete reload of all time entries and summaries
+          // Force a complete reload of time entries and summaries
           await this.loadTimeEntries();
-          
-          // Always refresh the All Entries data, regardless of which tab is visible
-          await this.loadAllTimeEntries();
         } catch (error) {
           console.error('Error saving time entry:', error);
 
@@ -431,9 +397,8 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { Authorization: `Bearer ${token}` }
           });
 
-          // Always reload both dashboard and all entries data
+          // Reload dashboard data
           await this.loadTimeEntries();
-          await this.loadAllTimeEntries();
         } catch (error) {
           console.error('Error deleting time entry:', error);
 
@@ -555,116 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${hours}h ${mins}m`;
       },
 
-      // --- All Entries Tab Methods ---
-
-      async loadAllTimeEntries() {
-        try {
-          // Reset all entries to a clean array first
-          this.allTimeEntries = [];
-          this.totalMinutesForAllEntries = 0;
-          this.uniqueDaysForAllEntries = 0;
-
-          const token = localStorage.getItem('token');
-          if (!token) return;
-
-          // Make sure to get ALL time entries by NOT supplying the date parameter
-          const response = await axios.get('/time-entries/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-
-          // Get the raw data
-          const rawEntries = response.data;
-
-          // Filter and prepare entries
-          let processedEntries = rawEntries;
-
-          // Filter by month if needed
-          if (this.filterMonth && this.filterMonth.length > 0) {
-            processedEntries = rawEntries.filter(entry => {
-              // Ensure we have a string for comparison
-              const entryDate = String(entry.date || '');
-              return entryDate.startsWith(this.filterMonth);
-            });
-          }
-
-          // Group by date and sort (newest first)
-          processedEntries.sort((a, b) => {
-            // First compare by date (newest first)
-            if (a.date !== b.date) {
-              return String(a.date) < String(b.date) ? 1 : -1;
-            }
-            // Then by start time (earliest first)
-            return String(a.start_time) > String(b.start_time) ? 1 : -1;
-          });
-
-          // Calculate totals
-          let totalMinutes = 0;
-          const uniqueDays = new Set();
-
-          processedEntries.forEach(entry => {
-            // Track unique days
-            if (entry.date) {
-              uniqueDays.add(entry.date);
-            }
-
-            // Calculate duration if we have times
-            if (entry.start_time && entry.end_time) {
-              const [startHours, startMins] = entry.start_time.split(':').map(Number);
-              const [endHours, endMins] = entry.end_time.split(':').map(Number);
-
-              let duration = (endHours * 60 + endMins) - (startHours * 60 + startMins);
-              if (duration < 0) duration += 24 * 60;
-
-              totalMinutes += duration;
-            }
-          });
-
-          // Update our data properties in one go
-          this.totalMinutesForAllEntries = totalMinutes;
-          this.uniqueDaysForAllEntries = uniqueDays.size;
-          this.allTimeEntries = processedEntries;
-
-          // Force a UI update if needed
-          this.$forceUpdate();
-
-        } catch (error) {
-          console.error('Error loading all time entries:', error);
-          // Only log out for critical auth errors
-          if (error.response?.status === 401) {
-            const errorMsg = error.response?.data?.detail || '';
-            if (errorMsg.includes('credentials') || errorMsg.includes('token')) {
-              console.warn('Authentication error, logging out:', errorMsg);
-              this.logout();
-            } else {
-              console.warn('Non-critical 401 error, not logging out:', errorMsg);
-            }
-          }
-        }
-      },
-
-      calculateTotalsForAllEntries() {
-        let totalMinutes = 0;
-        const uniqueDays = new Set();
-
-        this.allTimeEntries.forEach(entry => {
-          // Parse times
-          const [startHours, startMins] = entry.start_time.split(':').map(Number);
-          const [endHours, endMins] = entry.end_time.split(':').map(Number);
-
-          // Calculate duration
-          let durationMinutes = (endHours * 60 + endMins) - (startHours * 60 + startMins);
-          if (durationMinutes < 0) durationMinutes += 24 * 60; // Handle overnight
-
-          // Add to total
-          totalMinutes += durationMinutes;
-
-          // Add date to unique days set
-          uniqueDays.add(entry.date);
-        });
-
-        this.totalMinutesForAllEntries = totalMinutes;
-        this.uniqueDaysForAllEntries = uniqueDays.size;
-      },
+      // Keep only the edit modal functionality methods
 
 
       editTimeEntry(entry) {
@@ -764,9 +620,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) modal.hide();
           }
 
-          // Always reload both dashboard and all entries data to keep them in sync
+          // Reload dashboard data
           await this.loadTimeEntries();
-          await this.loadAllTimeEntries();
 
           // Clear editing state
           this.editingTimeEntry = null;

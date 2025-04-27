@@ -119,17 +119,10 @@
                 <button class="btn btn-outline-danger" @click="logout">Logout</button>
             </div>
 
-            <ul class="nav nav-tabs mb-4">
-                <li class="nav-item">
-                    <a class="nav-link" :class="{'active': activeTab === 'dashboard'}" href="#" @click.prevent="activeTab = 'dashboard'">Dashboard</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" :class="{'active': activeTab === 'allEntries'}" href="#" @click.prevent="activeTab = 'allEntries'">All Entries</a>
-                </li>
-            </ul>
+            <!-- No tabs needed since we only have the dashboard view now -->
 
-            <!-- Dashboard Tab -->
-            <div v-if="activeTab === 'dashboard'">
+            <!-- Main Dashboard Content -->
+            <div>
                 <div class="card mb-4">
                     <div class="card-header">
                         <h3>Add Time Entry</h3>
@@ -295,78 +288,7 @@
                 </div>
             </div>
             
-            <!-- All Entries Tab - Clean Version -->
-            <div v-else>
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>All Time Entries</h2>
-                    <div>
-                        <input type="month" class="form-control" v-model="filterMonth" @change="loadAllTimeEntries">
-                    </div>
-                </div>
-                
-                <!-- Clean entries list -->
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Time Entries ({{ allTimeEntries.length }})</h5>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <!-- Empty state -->
-                        <div v-if="allTimeEntries.length === 0" class="text-center py-5">
-                            <div class="text-muted mb-3">
-                                <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
-                            </div>
-                            <p class="text-muted">No time entries found for this period.</p>
-                        </div>
-                        
-                        <!-- List of entries -->
-                        <div v-else class="list-group list-group-flush">
-                            <div v-for="entry in allTimeEntries" :key="entry.id" class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <div class="d-flex align-items-center">
-                                            <span class="badge bg-primary me-2">{{ formatDate(entry.date) }}</span>
-                                            <span class="text-muted">{{ formatTime(entry.start_time) }} - {{ formatTime(entry.end_time) }}</span>
-                                        </div>
-                                        <div class="mt-1">
-                                            <span class="badge bg-light text-dark">{{ calculateDuration(entry.start_time, entry.end_time) }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-sm btn-outline-primary" @click="editTimeEntry(entry)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" @click="deleteTimeEntry(entry.id)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Summary Info -->
-                <div class="card mt-4">
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-4">
-                                <div class="h6 text-muted">Total Time</div>
-                                <div class="h4">{{ formatMinutes(totalMinutesForAllEntries) }}</div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="h6 text-muted">Total Entries</div>
-                                <div class="h4">{{ allTimeEntries.length }}</div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="h6 text-muted">Days Worked</div>
-                                <div class="h4">{{ uniqueDaysForAllEntries }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- No other tab content needed -->
         </div>
     </div>
 
