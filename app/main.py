@@ -11,25 +11,30 @@ import os
 from app import models, schemas, crud, auth
 from app.database import get_db
 
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
+# Define static directories
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+DIST_DIR = os.path.join(STATIC_DIR, "dist")
 
 app = FastAPI(title="TimeTrkr")
 
-
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "*"],  # Add Vite dev server origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["Content-Length"],
+    max_age=600  # Cache preflight requests for 10 minutes
 )
 
-# Mount static files
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static directories
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Mount built Vue app if it exists
+if os.path.exists(DIST_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
 
 
 @app.post("/token", response_model=schemas.Token)
@@ -155,10 +160,16 @@ async def root():
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_frontend_app(full_path: str):
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-
+    # First try to serve from the Vue dist directory
+    if os.path.exists(DIST_DIR):
+        index_path = os.path.join(DIST_DIR, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+    
+    # Fall back to the original static directory
+    index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-
-    else:
-        return HTTPException(status_code=500, detail="index file not found")
+    
+    # If neither exists, return an error
+    raise HTTPException(status_code=500, detail="Frontend app not found")
