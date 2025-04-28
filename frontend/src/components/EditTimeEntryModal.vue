@@ -34,6 +34,14 @@
                 <button type="button" class="btn btn-outline-primary" @click="setTimeToNow('end')">Now</button>
               </div>
             </div>
+            
+            <!-- Duration preview -->
+            <div class="alert alert-info mt-3" v-if="durationPreview">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-clock me-2"></i>
+                <strong>Duration: {{ durationPreview }}</strong>
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
@@ -48,8 +56,8 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
-import { apiService } from '../services/api'
+import { ref, computed, watch, defineProps, defineEmits } from 'vue'
+import { apiService, formatUtils } from '../services/api'
 
 const props = defineProps({
   entry: {
@@ -61,6 +69,16 @@ const props = defineProps({
 const emits = defineEmits(['update', 'close'])
 
 const isSubmitting = ref(false)
+
+// Calculate duration preview
+const durationPreview = computed(() => {
+  if (!props.entry) return null
+  
+  return formatUtils.calculateDuration(
+    props.entry.start_time, 
+    props.entry.end_time
+  )
+})
 
 function adjustTime(type, minutes) {
   if (!props.entry) return
@@ -131,3 +149,9 @@ async function updateEntry() {
   }
 }
 </script>
+
+<style scoped>
+.input-group .btn {
+  z-index: 0;
+}
+</style>

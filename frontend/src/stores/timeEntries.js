@@ -6,6 +6,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   // State
   const todayEntries = ref([])
   const weekEntries = ref([])
+  const allEntries = ref([])
   const dailyTotals = ref({})
   const expandedDays = ref([])
   const todaySummary = ref(null)
@@ -16,6 +17,8 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     endTime: '17:00'
   })
   const filterDate = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM format
+  const sortDirection = ref('desc') // 'asc' or 'desc'
+  const isLoadingEntries = ref(false)
   
   // Computed values
   const getDayEntries = computed(() => {
@@ -242,23 +245,89 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
   }
   
+  // Load all time entries, optionally filtered by month
+  async function loadAllTimeEntries() {
+    try {
+      isLoadingEntries.value = true
+      
+      // Get all time entries
+      const response = await apiService.get('/time-entries/')
+      
+      // Filter by month if needed
+      let entries = response.data
+      if (filterDate.value) {
+        entries = entries.filter(entry => 
+          entry.date.startsWith(filterDate.value)
+        )
+      }
+      
+      // Sort entries
+      allEntries.value = sortTimeEntries(entries, sortDirection.value)
+      
+      return { success: true }
+    } catch (error) {
+      console.error('Error loading all time entries:', error)
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Failed to load time entries' 
+      }
+    } finally {
+      isLoadingEntries.value = false
+    }
+  }
+  
+  // Sort time entries by date and time
+  function sortTimeEntries(entries, direction = 'desc') {
+    return [...entries].sort((a, b) => {
+      const dateA = a.date
+      const dateB = b.date
+      
+      if (dateA !== dateB) {
+        return direction === 'asc' 
+          ? dateA.localeCompare(dateB) 
+          : dateB.localeCompare(dateA)
+      }
+      
+      // If dates are same, sort by time
+      const timeA = a.start_time
+      const timeB = b.start_time
+      
+      return direction === 'asc' 
+        ? timeA.localeCompare(timeB) 
+        : timeB.localeCompare(timeA)
+    })
+  }
+  
+  // Toggle sort direction
+  function toggleSortDirection() {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    // Re-sort entries with new direction
+    allEntries.value = sortTimeEntries(allEntries.value, sortDirection.value)
+  }
+  
   return {
     todayEntries,
     weekEntries,
+    allEntries,
     dailyTotals,
     expandedDays,
     todaySummary,
     weekSummary,
     currentEntry,
     filterDate,
+    sortDirection,
+    isLoadingEntries,
     getDayEntries,
     loadTimeEntries,
+    loadAllTimeEntries,
     calculateDailyTotals,
     toggleDayEntries,
     saveTimeEntry,
     deleteTimeEntry,
     resetForm,
     adjustTime,
-    setTimeToNow
+    setTimeToNow,
+    toggleSortDirection,
+    sortTimeEntries
   }
 })
