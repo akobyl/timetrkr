@@ -67,7 +67,14 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       const todayResponse = await apiService.get('/time-entries/', { 
         params: { entry_date: today } 
       })
-      todayEntries.value = todayResponse.data
+      
+      // Ensure response data is an array
+      todayEntries.value = Array.isArray(todayResponse.data) ? todayResponse.data : []
+      
+      // If data isn't an array, log error for debugging
+      if (!Array.isArray(todayResponse.data)) {
+        console.error('Today API response is not an array:', todayResponse.data)
+      }
       
       // Get today's summary
       const todaySummaryResponse = await apiService.get('/time-summary/', {
@@ -86,8 +93,16 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       // Load all entries then filter client-side
       const allEntriesResponse = await apiService.get('/time-entries/')
       
+      // Ensure all entries response data is an array
+      const allEntries = Array.isArray(allEntriesResponse.data) ? allEntriesResponse.data : []
+      
+      // If data isn't an array, log error for debugging
+      if (!Array.isArray(allEntriesResponse.data)) {
+        console.error('All entries API response is not an array:', allEntriesResponse.data)
+      }
+      
       // Filter entries from the full week and sort by date
-      weekEntries.value = allEntriesResponse.data
+      weekEntries.value = allEntries
         .filter(entry => {
           const entryDate = String(entry.date)
           const isInWeek = entryDate >= startOfWeekStr && entryDate <= endOfWeekStr
@@ -118,6 +133,12 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       
     } catch (error) {
       console.error('Error loading time entries:', error)
+      
+      // Ensure we have default values on error
+      todayEntries.value = []
+      weekEntries.value = []
+      todaySummary.value = null
+      weekSummary.value = null
     }
   }
   
@@ -253,8 +274,15 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       // Get all time entries
       const response = await apiService.get('/time-entries/')
       
+      // Ensure response.data is an array
+      let entries = Array.isArray(response.data) ? response.data : []
+      
+      // If data isn't an array, log error for debugging
+      if (!Array.isArray(response.data)) {
+        console.error('API response is not an array:', response.data)
+      }
+      
       // Filter by month if needed
-      let entries = response.data
       if (filterDate.value) {
         entries = entries.filter(entry => 
           entry.date.startsWith(filterDate.value)
@@ -267,6 +295,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       return { success: true }
     } catch (error) {
       console.error('Error loading all time entries:', error)
+      allEntries.value = [] // Ensure we set an empty array on error
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Failed to load time entries' 

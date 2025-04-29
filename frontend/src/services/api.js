@@ -1,8 +1,11 @@
 import axios from 'axios'
 
-// Create axios instance with base URL
+// Determine if we're in production or development based on environment or URL
+const isProd = window.location.port === '8000' || window.location.port === '80' || window.location.port === '443' || window.location.port === '';
+
+// Create axios instance with appropriate base URL for env
 const apiService = axios.create({
-  baseURL: '/api', // This will be served from the same origin as the Vue app
+  baseURL: isProd ? '' : '/api', // In prod, don't use /api prefix as it's directly served
   timeout: 30000
 })
 
@@ -22,8 +25,24 @@ apiService.interceptors.request.use(
 
 // Add response interceptor for error handling
 apiService.interceptors.response.use(
-  response => response,
+  response => {
+    // Validate that list endpoints return arrays
+    const url = response.config.url;
+    // If endpoint should return an array but doesn't, convert to empty array and log error
+    if ((url.endsWith('/time-entries/') || url.endsWith('/time-entries')) && !Array.isArray(response.data)) {
+      console.error('Expected array response from API but got:', response.data);
+      response.data = []; // Ensure we always return an array for endpoints that should return arrays
+    }
+    return response;
+  },
   error => {
+    // Log details about the error for debugging
+    console.error('API Error:', error.message);
+    console.error('Request URL:', error.config?.url);
+    console.error('Method:', error.config?.method);
+    console.error('Status:', error.response?.status);
+    console.error('Response Data:', error.response?.data);
+    
     // Handle 401 responses (unauthorized)
     if (error.response && error.response.status === 401) {
       const errorMsg = error.response?.data?.detail || ''
@@ -39,6 +58,9 @@ apiService.interceptors.response.use(
         // Redirect to login
         window.location.href = '/login'
       }
+    } else if (error.response && error.response.status === 405) {
+      // Handle 405 Method Not Allowed by logging details
+      console.error('Method Not Allowed Error. URL:', error.config?.url, 'Method:', error.config?.method);
     }
     
     return Promise.reject(error)
