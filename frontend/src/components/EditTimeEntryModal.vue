@@ -58,6 +58,7 @@
 <script setup>
 import { ref, computed, watch, defineProps, defineEmits } from 'vue'
 import { apiService, formatUtils } from '../services/api'
+import { Modal } from 'bootstrap'
 
 const props = defineProps({
   entry: {
@@ -137,7 +138,7 @@ async function updateEntry() {
     
     // Close the modal
     const modalEl = document.getElementById('editEntryModal')
-    const modal = bootstrap.Modal.getInstance(modalEl)
+    const modal = Modal.getInstance(modalEl)
     if (modal) modal.hide()
     
     // Notify parent component

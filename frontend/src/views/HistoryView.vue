@@ -100,6 +100,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useTimeEntriesStore } from '../stores/timeEntries'
 import { formatUtils } from '../services/api'
 import EditTimeEntryModal from '../components/EditTimeEntryModal.vue'
+import { Modal } from 'bootstrap'
 
 const timeEntriesStore = useTimeEntriesStore()
 const editingEntry = ref(null)
@@ -128,7 +129,7 @@ function editEntry(entry) {
   
   // Open the modal
   const modalEl = document.getElementById('editEntryModal')
-  const modal = new bootstrap.Modal(modalEl)
+  const modal = new Modal(modalEl)
   modal.show()
 }
 
