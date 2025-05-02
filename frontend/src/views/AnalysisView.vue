@@ -5,10 +5,18 @@
         <h3>Time Analysis</h3>
         <div class="date-controls">
           <div class="input-group">
-            <span class="input-group-text">Date Range</span>
-            <input type="date" class="form-control" v-model="startDate" :max="endDate">
-            <span class="input-group-text">to</span>
-            <input type="date" class="form-control" v-model="endDate" :min="startDate">
+            <select class="form-select" v-model="selectedPreset" @change="applyDatePreset($event)" style="max-width: 180px;">
+              <option value="">Custom Range</option>
+              <option value="current_month">Current Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="last_3_months">Last 3 Months</option>
+              <option value="last_6_months">Last 6 Months</option>
+              <option value="this_year">This Year</option>
+            </select>
+            <span class="input-group-text">From</span>
+            <input type="date" class="form-control" v-model="startDate" :max="endDate" @change="manualDateInput = true">
+            <span class="input-group-text">To</span>
+            <input type="date" class="form-control" v-model="endDate" :min="startDate" @change="manualDateInput = true">
             <button class="btn btn-primary" @click="fetchTimeData" :disabled="isLoading">
               <span v-if="isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
               Apply
@@ -137,6 +145,7 @@ Chart.register(
 // Data
 const startDate = ref('')
 const endDate = ref('')
+const selectedPreset = ref('')
 const isLoading = ref(false)
 const error = ref(null)
 const dailyHours = ref([])
@@ -151,6 +160,9 @@ const heatChartInstance = ref(null)
 
 // Setup date range (default to current month)
 const setDefaultDateRange = () => {
+  // Reset manual input flag
+  manualDateInput = false
+  
   const now = new Date()
   
   // Start from the first day of the current month
@@ -162,6 +174,61 @@ const setDefaultDateRange = () => {
   // Format as YYYY-MM-DD
   endDate.value = end.toISOString().split('T')[0]
   startDate.value = start.toISOString().split('T')[0]
+  
+  // Set preset selection to current month
+  selectedPreset.value = 'current_month'
+}
+
+// Handle date presets
+const applyDatePreset = (event) => {
+  // Reset manual input flag since we're applying a preset
+  manualDateInput = false
+  
+  const now = new Date()
+  let start, end
+  
+  switch (selectedPreset.value) {
+    case 'current_month':
+      // Current month: 1st of current month to end of month or today
+      start = new Date(now.getFullYear(), now.getMonth(), 1)
+      end = new Date(2025, 4, 31) // May 31, 2025
+      break
+      
+    case 'last_month':
+      // Last month: 1st to last day of previous month
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      end = new Date(now.getFullYear(), now.getMonth(), 0)
+      break
+      
+    case 'last_3_months':
+      // Last 3 months: 1st day of month from 3 months ago to today
+      start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+      end = new Date(2025, 4, 31) // May 31, 2025
+      break
+      
+    case 'last_6_months':
+      // Last 6 months: 1st day of month from 6 months ago to today
+      start = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+      end = new Date(2025, 4, 31) // May 31, 2025
+      break
+      
+    case 'this_year':
+      // This year: January 1st to today
+      start = new Date(now.getFullYear(), 0, 1)
+      end = new Date(2025, 4, 31) // May 31, 2025
+      break
+      
+    default:
+      // Custom range - do nothing
+      return
+  }
+  
+  // Format and update date values
+  startDate.value = start.toISOString().split('T')[0]
+  endDate.value = end.toISOString().split('T')[0]
+  
+  // Fetch data with new range
+  fetchTimeData()
 }
 
 // Computed properties for summary stats
@@ -607,10 +674,18 @@ const updateWeeklyChart = () => {
   console.log('New weekly chart instance created successfully');
 };
 
-// Watch for date changes
+// Flag to track if dates are being set manually via input fields
+let manualDateInput = false
+
+// Watch for date changes from the input fields
 watch([startDate, endDate], () => {
   if (startDate.value && endDate.value) {
     error.value = null
+    
+    // Only reset the preset if the change came from manual input
+    if (manualDateInput) {
+      selectedPreset.value = ''
+    }
   }
 })
 
