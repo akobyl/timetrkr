@@ -199,19 +199,19 @@ const applyDatePreset = (event) => {
     case 'last_3_months':
       // Last 3 months: 1st day of month from 3 months ago to today
       start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-      end = new Date(2025, 4, 31) // May 31, 2025
+      end = new Date(2025, 4, 31) // Keep as May 31, 2025 to match current_month
       break
       
     case 'last_6_months':
       // Last 6 months: 1st day of month from 6 months ago to today
       start = new Date(now.getFullYear(), now.getMonth() - 5, 1)
-      end = new Date(2025, 4, 31) // May 31, 2025
+      end = new Date(2025, 4, 31) // Keep as May 31, 2025 to match current_month
       break
       
     case 'this_year':
       // This year: January 1st to today
       start = new Date(now.getFullYear(), 0, 1)
-      end = new Date(2025, 4, 31) // May 31, 2025
+      end = new Date(2025, 4, 31) // Keep as May 31, 2025 to match current_month
       break
       
     default:
@@ -313,55 +313,62 @@ const fetchTimeData = async () => {
     // Group days into weeks and sum up hours
     const weekMap = new Map()
     
+    // Parse start and end dates to use for boundary checking
+    const startDateObj = new Date(startDate.value)
+    const endDateObj = new Date(endDate.value)
+    
     dailyHours.value.forEach(day => {
       if (!day.rawDate) return
       
       const date = new Date(day.rawDate)
-      // Get ISO week number (1-53)
-      const weekNum = getWeekNumber(date)
-      const weekYear = date.getFullYear()
-      const weekKey = `${weekYear}-W${weekNum.toString().padStart(2, '0')}`
+      
+      // Skip dates outside our range (extra safety check)
+      if (date < startDateObj || date > endDateObj) return
+      
+      // Get the week of the month (1-based)
+      // This is simpler than ISO week numbers and stays within the month
+      const weekOfMonth = Math.ceil(date.getDate() / 7)
+      const month = date.getMonth()
+      const year = date.getFullYear()
+      const weekKey = `${year}-${month+1}-W${weekOfMonth}`
       
       if (!weekMap.has(weekKey)) {
-        // Get the year from the date
-        const year = date.getFullYear()
+        // Calculate the start date for this week (Sunday)
+        const weekStart = new Date(date)
+        // Go back to the Sunday of this week
+        const dayOfWeek = date.getDay()
+        weekStart.setDate(date.getDate() - dayOfWeek)
         
-        // Find the first Sunday of the year
-        const firstDayOfYear = new Date(year, 0, 1)
-        const firstSunday = new Date(firstDayOfYear)
-        if (firstSunday.getDay() !== 0) {
-          firstSunday.setDate(firstSunday.getDate() + (7 - firstSunday.getDay()))
+        // If weekStart is before our date range, clamp it to start date
+        if (weekStart < startDateObj) {
+          weekStart.setTime(startDateObj.getTime())
         }
         
-        // Calculate the start date for this week number (Sunday)
-        // Week 1 starts with the first day of the year
-        // Week 2 starts with the first Sunday
-        // Subsequent weeks start (weekNum - 2) * 7 days after the first Sunday
-        let weekStart
-        if (weekNum === 1) {
-          // Week 1 is a special case - it's the days before the first Sunday
-          weekStart = new Date(year, 0, 1)
-        } else {
-          weekStart = new Date(firstSunday)
-          weekStart.setDate(firstSunday.getDate() + (weekNum - 2) * 7)
-        }
-        
-        // Calculate end date (Saturday = Sunday + 6 days)
+        // Calculate end date (Saturday)
         const weekEnd = new Date(weekStart)
         weekEnd.setDate(weekStart.getDate() + 6)
+        
+        // If weekEnd is after our date range, clamp it to end date
+        if (weekEnd > endDateObj) {
+          weekEnd.setTime(endDateObj.getTime())
+        }
         
         // Format dates for display
         const weekStartStr = formatDate(weekStart.toISOString().split('T')[0])
         const weekEndStr = formatDate(weekEnd.toISOString().split('T')[0])
         
+        // Month names for better labels
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        
         weekMap.set(weekKey, {
-          weekNumber: weekNum,
-          year: weekYear,
-          weekLabel: `Week ${weekNum} (${weekYear})`,
+          weekNumber: weekOfMonth,
+          month: month,
+          year: year,
+          weekLabel: `Week ${weekOfMonth}, ${monthNames[month]}`,
           weekRange: `${weekStartStr} - ${weekEndStr}`,
           hours: 0,
-          // For sorting
-          sortKey: weekYear * 100 + weekNum
+          // For sorting: year, month, week
+          sortKey: (year * 10000) + (month * 100) + weekOfMonth
         })
       }
       
@@ -449,33 +456,14 @@ const fetchTimeData = async () => {
   }
 }
 
-// Helper function to get week number for Sunday-Saturday format
-const getWeekNumber = (date) => {
+// Helper function to get week of month (1-5)
+const getWeekOfMonth = (date) => {
   // Create a copy of the date
   const d = new Date(date)
-  // Set to midnight to avoid timezone issues
-  d.setHours(0, 0, 0, 0)
-  
-  // Get the first day of the year (January 1st)
-  const firstDayOfYear = new Date(d.getFullYear(), 0, 1)
-  
-  // Calculate first Sunday of the year
-  const firstSunday = new Date(firstDayOfYear)
-  // If January 1st is not a Sunday, move to the next Sunday
-  if (firstSunday.getDay() !== 0) {
-    firstSunday.setDate(firstSunday.getDate() + (7 - firstSunday.getDay()))
-  }
-  
-  // If our date is before the first Sunday, it's in week 1
-  if (d < firstSunday) {
-    return 1
-  }
-  
-  // Calculate the number of days since the first Sunday
-  const daysSinceFirstSunday = Math.floor((d - firstSunday) / (24 * 60 * 60 * 1000))
-  
-  // Calculate the week number (add 2 because week 1 is the first week of the year)
-  return Math.floor(daysSinceFirstSunday / 7) + 2
+  // Get the day of the month (1-31)
+  const day = d.getDate()
+  // Divide by 7 and round up to get the week number (1-5)
+  return Math.ceil(day / 7)
 }
 
 // Helper to generate all dates in a range (inclusive of both start and end)
@@ -489,20 +477,39 @@ const generateDateRange = (start, end) => {
   const [startYear, startMonth, startDay] = start.split('-').map(Number)
   const [endYear, endMonth, endDay] = end.split('-').map(Number)
   
+  // Create Date objects for comparison (set to noon to avoid timezone issues)
+  const startDate = new Date(startYear, startMonth - 1, startDay, 12, 0, 0)
+  const endDate = new Date(endYear, endMonth - 1, endDay, 12, 0, 0)
+  
+  // Extra safety check
+  if (startDate > endDate) {
+    console.error('Start date is after end date')
+    return dates
+  }
+  
   // Initialize current date to start date
   let currentYear = startYear
   let currentMonth = startMonth - 1 // JS months are 0-indexed
   let currentDay = startDay
   
   // Keep generating dates until we've reached or passed the end date
-  while (
-    currentYear < endYear || 
-    (currentYear === endYear && currentMonth < endMonth) || 
-    (currentYear === endYear && currentMonth === endMonth && currentDay <= endDay)
-  ) {
+  while (true) {
+    // Create a date object for the current date (set to noon)
+    const currentDate = new Date(currentYear, currentMonth, currentDay, 12, 0, 0)
+    
+    // Stop if we've passed the end date
+    if (currentDate > endDate) {
+      break
+    }
+    
     // Format current date and add to array
     const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
     dates.push(formattedDate)
+    
+    // If we've reached the end date, we're done
+    if (currentYear === endYear && currentMonth === endMonth - 1 && currentDay === endDay) {
+      break
+    }
     
     // Advance to next day
     currentDay++
@@ -522,7 +529,11 @@ const generateDateRange = (start, end) => {
   }
   
   // Add debugging info
-  console.log(`Generated ${dates.length} dates from ${dates[0]} to ${dates[dates.length-1]}`)
+  if (dates.length > 0) {
+    console.log(`Generated ${dates.length} dates from ${dates[0]} to ${dates[dates.length-1]}`)
+  } else {
+    console.warn('No dates were generated!')
+  }
   
   return dates
 }
@@ -672,7 +683,7 @@ const updateWeeklyChart = () => {
         x: {
           title: {
             display: true,
-            text: 'Week (Sun-Sat)'
+            text: 'Weeks'
           }
         }
       },
@@ -682,14 +693,14 @@ const updateWeeklyChart = () => {
             title: function (tooltipItems) { 
               const index = tooltipItems[0].dataIndex;
               const week = weeklyHours.value[index];
-              // Week label already includes the year
-              return tooltipItems[0].label;
+              // Show the week of month and date range
+              return `${week.weekLabel} (${week.year})`;
             },
             label: function (context) { 
               const week = weeklyHours.value[context.dataIndex];
               return [
                 `${context.formattedValue} hours`,
-                `Sun-Sat: ${week.weekRange}`
+                `Date Range: ${week.weekRange}`
               ];
             }
           }
