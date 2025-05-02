@@ -163,9 +163,11 @@ const setDefaultDateRange = () => {
   // Reset manual input flag
   manualDateInput = false
   
-  // Hard code to May 2025 for consistency
-  const start = new Date(2025, 4, 1) // May 1, 2025 (months are 0-indexed)
-  const end = new Date(2025, 4, 31)   // May 31, 2025
+  const now = new Date()
+  // Get first day of current month
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  // Get last day of current month
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
   
   // Format as YYYY-MM-DD in local time
   endDate.value = formatYYYYMMDD(end)
@@ -185,9 +187,9 @@ const applyDatePreset = (event) => {
   
   switch (selectedPreset.value) {
     case 'current_month':
-      // Hard code May 1-31, 2025 for consistency
-      start = new Date(2025, 4, 1) // May 1, 2025 (months are 0-indexed)
-      end = new Date(2025, 4, 31)  // May 31, 2025
+      // First and last day of current month
+      start = new Date(now.getFullYear(), now.getMonth(), 1)
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
       
     case 'last_month':
@@ -197,21 +199,21 @@ const applyDatePreset = (event) => {
       break
       
     case 'last_3_months':
-      // Last 3 months: 1st day of month from 3 months ago to today
+      // Last 3 months: 1st day of month from 3 months ago to last day of current month
       start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-      end = new Date(2025, 4, 31) // Keep as May 31, 2025 to match current_month
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
       
     case 'last_6_months':
-      // Last 6 months: 1st day of month from 6 months ago to today
+      // Last 6 months: 1st day of month from 6 months ago to last day of current month
       start = new Date(now.getFullYear(), now.getMonth() - 5, 1)
-      end = new Date(2025, 4, 31) // Keep as May 31, 2025 to match current_month
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
       
     case 'this_year':
-      // This year: January 1st to today
+      // This year: January 1st to last day of current month
       start = new Date(now.getFullYear(), 0, 1)
-      end = new Date(2025, 4, 31) // Keep as May 31, 2025 to match current_month
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
       
     default:
