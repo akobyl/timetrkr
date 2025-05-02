@@ -149,13 +149,15 @@ const dailyChartInstance = ref(null)
 const weeklyChartInstance = ref(null)
 const heatChartInstance = ref(null)
 
-// Setup date range (default to current year)
+// Setup date range (default to current month)
 const setDefaultDateRange = () => {
   const now = new Date()
-  const end = new Date(now)
   
-  // Start from January 1st of current year
-  const start = new Date(now.getFullYear(), 0, 1)
+  // Start from the first day of the current month
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  
+  // Set end date to May 31, 2025 (as requested)
+  const end = new Date(2025, 4, 31) // May is month 4 (0-based index)
   
   // Format as YYYY-MM-DD
   endDate.value = end.toISOString().split('T')[0]
@@ -202,6 +204,7 @@ const fetchTimeData = async () => {
     // Generate a date range array (all days between start and end)
     const dateRange = generateDateRange(startDate.value, endDate.value)
     console.log('Date range generated:', dateRange.length, 'days')
+    console.log('Date range start:', dateRange[0], 'end:', dateRange[dateRange.length-1])
 
     // Calculate daily total hours
     dailyHours.value = dateRange.map(date => {
@@ -249,16 +252,30 @@ const fetchTimeData = async () => {
       const weekKey = `${weekYear}-W${weekNum.toString().padStart(2, '0')}`
       
       if (!weekMap.has(weekKey)) {
-        // Calculate week start date (Monday) and end date (Sunday)
-        const weekStart = new Date(date)
-        const currentDay = date.getDay() // 0 = Sunday, 1 = Monday, ...
+        // Get the year from the date
+        const year = date.getFullYear()
         
-        // Calculate days to subtract to get to Monday
-        const daysToSubtract = currentDay === 0 ? 6 : currentDay - 1
+        // Find the first Sunday of the year
+        const firstDayOfYear = new Date(year, 0, 1)
+        const firstSunday = new Date(firstDayOfYear)
+        if (firstSunday.getDay() !== 0) {
+          firstSunday.setDate(firstSunday.getDate() + (7 - firstSunday.getDay()))
+        }
         
-        weekStart.setDate(date.getDate() - daysToSubtract)
+        // Calculate the start date for this week number (Sunday)
+        // Week 1 starts with the first day of the year
+        // Week 2 starts with the first Sunday
+        // Subsequent weeks start (weekNum - 2) * 7 days after the first Sunday
+        let weekStart
+        if (weekNum === 1) {
+          // Week 1 is a special case - it's the days before the first Sunday
+          weekStart = new Date(year, 0, 1)
+        } else {
+          weekStart = new Date(firstSunday)
+          weekStart.setDate(firstSunday.getDate() + (weekNum - 2) * 7)
+        }
         
-        // Calculate end date (Sunday)
+        // Calculate end date (Saturday = Sunday + 6 days)
         const weekEnd = new Date(weekStart)
         weekEnd.setDate(weekStart.getDate() + 6)
         
@@ -269,7 +286,7 @@ const fetchTimeData = async () => {
         weekMap.set(weekKey, {
           weekNumber: weekNum,
           year: weekYear,
-          weekLabel: `Week ${weekNum}`,
+          weekLabel: `Week ${weekNum} (${weekYear})`,
           weekRange: `${weekStartStr} - ${weekEndStr}`,
           hours: 0,
           // For sorting
@@ -361,40 +378,77 @@ const fetchTimeData = async () => {
   }
 }
 
-// Helper function to get ISO week number
+// Helper function to get week number for Sunday-Saturday format
 const getWeekNumber = (date) => {
+  // Create a copy of the date
   const d = new Date(date)
+  // Set to midnight to avoid timezone issues
   d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7)) // Thursday in current week
-  const week1 = new Date(d.getFullYear(), 0, 4) // January 4th is always in week 1
-  const weekNum = 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7)
-  return weekNum
+  
+  // Get the first day of the year (January 1st)
+  const firstDayOfYear = new Date(d.getFullYear(), 0, 1)
+  
+  // Calculate first Sunday of the year
+  const firstSunday = new Date(firstDayOfYear)
+  // If January 1st is not a Sunday, move to the next Sunday
+  if (firstSunday.getDay() !== 0) {
+    firstSunday.setDate(firstSunday.getDate() + (7 - firstSunday.getDay()))
+  }
+  
+  // If our date is before the first Sunday, it's in week 1
+  if (d < firstSunday) {
+    return 1
+  }
+  
+  // Calculate the number of days since the first Sunday
+  const daysSinceFirstSunday = Math.floor((d - firstSunday) / (24 * 60 * 60 * 1000))
+  
+  // Calculate the week number (add 2 because week 1 is the first week of the year)
+  return Math.floor(daysSinceFirstSunday / 7) + 2
 }
 
-// Helper to generate all dates in a range
+// Helper to generate all dates in a range (inclusive of both start and end)
 const generateDateRange = (start, end) => {
+  // Start with empty array
   const dates = []
+  
+  // Parse start and end dates
   const startDate = new Date(start)
   const endDate = new Date(end)
-
-  // Set time to midnight to avoid timezone issues
-  startDate.setHours(0, 0, 0, 0)
-  endDate.setHours(0, 0, 0, 0)
-
-  // Loop through dates and add each one
-  let currentDate = new Date(startDate)
+  
+  // Set time to noon to avoid timezone issues
+  startDate.setHours(12, 0, 0, 0)
+  endDate.setHours(12, 0, 0, 0)
+  
+  // Create a copy for iteration
+  const currentDate = new Date(startDate)
+  
+  // Loop through each day from start to end (inclusive)
   while (currentDate <= endDate) {
-    dates.push(currentDate.toISOString().split('T')[0])
+    // Format the date as YYYY-MM-DD
+    const year = currentDate.getFullYear()
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0')
+    const day = currentDate.getDate().toString().padStart(2, '0')
+    
+    dates.push(`${year}-${month}-${day}`)
+    
+    // Move to next day
     currentDate.setDate(currentDate.getDate() + 1)
   }
-
+  
   return dates
 }
 
 // Format date for display
 const formatDate = (dateStr) => {
   const parts = dateStr.split('-')
-  const date = new Date(parts[0], parts[1] - 1, parts[2])
+  // JavaScript months are 0-based (0 = January)
+  const year = parseInt(parts[0])
+  const month = parseInt(parts[1]) - 1 
+  const day = parseInt(parts[2])
+  
+  // Create a date object at noon to avoid timezone issues
+  const date = new Date(year, month, day, 12, 0, 0)
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
@@ -412,7 +466,7 @@ const updateDailyChart = () => {
     dailyChartInstance.value = null;
   }
 
-  // Prepare data 
+  // Prepare data - ensure we have correct date labels
   const labels = dailyHours.value.map(day => day.date);
   const data = dailyHours.value.map(day => day.hours);
 
@@ -522,7 +576,7 @@ const updateWeeklyChart = () => {
         x: {
           title: {
             display: true,
-            text: 'Week'
+            text: 'Week (Sun-Sat)'
           }
         }
       },
@@ -532,13 +586,14 @@ const updateWeeklyChart = () => {
             title: function (tooltipItems) { 
               const index = tooltipItems[0].dataIndex;
               const week = weeklyHours.value[index];
-              return `${tooltipItems[0].label} (${week.year})`;
+              // Week label already includes the year
+              return tooltipItems[0].label;
             },
             label: function (context) { 
               const week = weeklyHours.value[context.dataIndex];
               return [
                 `${context.formattedValue} hours`,
-                `${week.weekRange}`
+                `Sun-Sat: ${week.weekRange}`
               ];
             }
           }
