@@ -11,12 +11,22 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   const expandedDays = ref([])
   const todaySummary = ref(null)
   const weekSummary = ref(null)
+  // Get today's date in local timezone, not UTC
+  function getLocalDateString() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  
   const currentEntry = ref({
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(),
     startTime: '09:00',
     endTime: '17:00'
   })
-  const filterDate = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM format
+  // YYYY-MM format using local date
+  const filterDate = ref(getLocalDateString().slice(0, 7))
   const sortDirection = ref('desc') // 'asc' or 'desc'
   const isLoadingEntries = ref(false)
   
@@ -45,9 +55,9 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     startOfWeek.setHours(0, 0, 0, 0)
     endOfWeek.setHours(23, 59, 59, 999)
     
-    // Format as YYYY-MM-DD strings
-    const startStr = startOfWeek.toISOString().split('T')[0]
-    const endStr = endOfWeek.toISOString().split('T')[0]
+    // Format as YYYY-MM-DD strings using local date format
+    const startStr = formatLocalDate(startOfWeek)
+    const endStr = formatLocalDate(endOfWeek)
     
     return {
       start: startStr,
@@ -57,11 +67,19 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     }
   }
   
+  // Format a Date object as YYYY-MM-DD string in local timezone
+  function formatLocalDate(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  
   // Actions
   async function loadTimeEntries() {
     try {
-      // Get today's date
-      const today = new Date().toISOString().split('T')[0]
+      // Get today's date in local timezone
+      const today = getLocalDateString()
       
       // Load today's entries
       const todayResponse = await apiService.get('/time-entries/', { 
@@ -218,7 +236,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   
   function resetForm() {
     currentEntry.value = {
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
       startTime: '09:00',
       endTime: '17:00'
     }
@@ -248,7 +266,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     const timeField = type === 'start' ? 'startTime' : 'endTime'
     const now = new Date()
     
-    // Get hours and minutes
+    // Get local hours and minutes
     let hours = now.getHours()
     let minutes = now.getMinutes()
     

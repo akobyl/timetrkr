@@ -163,17 +163,13 @@ const setDefaultDateRange = () => {
   // Reset manual input flag
   manualDateInput = false
   
-  const now = new Date()
+  // Hard code to May 2025 for consistency
+  const start = new Date(2025, 4, 1) // May 1, 2025 (months are 0-indexed)
+  const end = new Date(2025, 4, 31)   // May 31, 2025
   
-  // Start from the first day of the current month
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  
-  // Set end date to May 31, 2025 (as requested)
-  const end = new Date(2025, 4, 31) // May is month 4 (0-based index)
-  
-  // Format as YYYY-MM-DD
-  endDate.value = end.toISOString().split('T')[0]
-  startDate.value = start.toISOString().split('T')[0]
+  // Format as YYYY-MM-DD in local time
+  endDate.value = formatYYYYMMDD(end)
+  startDate.value = formatYYYYMMDD(start)
   
   // Set preset selection to current month
   selectedPreset.value = 'current_month'
@@ -189,9 +185,9 @@ const applyDatePreset = (event) => {
   
   switch (selectedPreset.value) {
     case 'current_month':
-      // Current month: 1st of current month to end of month or today
-      start = new Date(now.getFullYear(), now.getMonth(), 1)
-      end = new Date(2025, 4, 31) // May 31, 2025
+      // Hard code May 1-31, 2025 for consistency
+      start = new Date(2025, 4, 1) // May 1, 2025 (months are 0-indexed)
+      end = new Date(2025, 4, 31)  // May 31, 2025
       break
       
     case 'last_month':
@@ -223,9 +219,12 @@ const applyDatePreset = (event) => {
       return
   }
   
-  // Format and update date values
-  startDate.value = start.toISOString().split('T')[0]
-  endDate.value = end.toISOString().split('T')[0]
+  // Format date values consistently in local time
+  startDate.value = formatYYYYMMDD(start)
+  endDate.value = formatYYYYMMDD(end)
+  
+  // Log the date range for debugging
+  console.log(`Date range applied: ${startDate.value} to ${endDate.value}`)
   
   // Fetch data with new range
   fetchTimeData()
@@ -272,6 +271,11 @@ const fetchTimeData = async () => {
     const dateRange = generateDateRange(startDate.value, endDate.value)
     console.log('Date range generated:', dateRange.length, 'days')
     console.log('Date range start:', dateRange[0], 'end:', dateRange[dateRange.length-1])
+    
+    // Verify that the date range includes the end date
+    if (dateRange.length > 0 && dateRange[dateRange.length-1] !== endDate.value) {
+      console.warn(`Warning: Date range does not include the end date! End date: ${endDate.value}, Last date in range: ${dateRange[dateRange.length-1]}`)
+    }
 
     // Calculate daily total hours
     dailyHours.value = dateRange.map(date => {
@@ -476,34 +480,59 @@ const getWeekNumber = (date) => {
 
 // Helper to generate all dates in a range (inclusive of both start and end)
 const generateDateRange = (start, end) => {
+  console.log(`Generating date range from ${start} to ${end}`)
+  
   // Start with empty array
   const dates = []
   
-  // Parse start and end dates
-  const startDate = new Date(start)
-  const endDate = new Date(end)
+  // Parse dates by components to avoid timezone issues
+  const [startYear, startMonth, startDay] = start.split('-').map(Number)
+  const [endYear, endMonth, endDay] = end.split('-').map(Number)
   
-  // Set time to noon to avoid timezone issues
-  startDate.setHours(12, 0, 0, 0)
-  endDate.setHours(12, 0, 0, 0)
+  // Initialize current date to start date
+  let currentYear = startYear
+  let currentMonth = startMonth - 1 // JS months are 0-indexed
+  let currentDay = startDay
   
-  // Create a copy for iteration
-  const currentDate = new Date(startDate)
-  
-  // Loop through each day from start to end (inclusive)
-  while (currentDate <= endDate) {
-    // Format the date as YYYY-MM-DD
-    const year = currentDate.getFullYear()
-    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0')
-    const day = currentDate.getDate().toString().padStart(2, '0')
+  // Keep generating dates until we've reached or passed the end date
+  while (
+    currentYear < endYear || 
+    (currentYear === endYear && currentMonth < endMonth) || 
+    (currentYear === endYear && currentMonth === endMonth && currentDay <= endDay)
+  ) {
+    // Format current date and add to array
+    const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
+    dates.push(formattedDate)
     
-    dates.push(`${year}-${month}-${day}`)
+    // Advance to next day
+    currentDay++
     
-    // Move to next day
-    currentDate.setDate(currentDate.getDate() + 1)
+    // Check if we need to roll over to next month
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+    if (currentDay > daysInMonth) {
+      currentDay = 1
+      currentMonth++
+      
+      // Check if we need to roll over to next year
+      if (currentMonth > 11) {
+        currentMonth = 0
+        currentYear++
+      }
+    }
   }
   
+  // Add debugging info
+  console.log(`Generated ${dates.length} dates from ${dates[0]} to ${dates[dates.length-1]}`)
+  
   return dates
+}
+
+// Helper function to format Date as YYYY-MM-DD in local timezone
+const formatYYYYMMDD = (date) => {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 // Format date for display
