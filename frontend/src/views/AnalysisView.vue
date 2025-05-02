@@ -733,7 +733,7 @@ onMounted(async () => {
   console.log('Component mounted successfully')
 })
 
-// Update heat chart
+// Update heat chart - simplified version
 const updateHeatChart = () => {
   if (!heatChart.value) {
     console.error('Heat chart canvas ref is not available yet.');
@@ -747,78 +747,60 @@ const updateHeatChart = () => {
     heatChartInstance.value = null;
   }
 
-  // We need to consolidate the data for better visualization
-  // Let's group by hour for the x-axis labels to avoid overcrowding
-  const hourlyLabels = [];
-  for (let hour = 0; hour < 24; hour++) {
-    hourlyLabels.push(`${hour.toString().padStart(2, '0')}:00`);
-  }
-
-  // Prepare our dataset for the heat map
-  // We'll use a line chart with custom point styling to simulate a heat map
-  const data = timeHeatData.value.map(item => item.count);
-  
-  // Find the maximum count for scaling the color intensity
-  const maxCount = Math.max(...data, 1);
-
   // Create a new chart instance
-  console.log('Creating heat chart instance');
+  console.log('Creating simplified heat chart instance');
   const ctx = heatChart.value.getContext('2d');
   if (!ctx) {
     console.error('Failed to get heat chart canvas context');
     return;
   }
   
-  // Helper function to generate a color based on intensity
+  // Extract simple arrays of data and labels
+  const labels = [];
+  const data = [];
+  
+  // Process the time heat data
+  for (let i = 0; i < timeHeatData.value.length; i++) {
+    const item = timeHeatData.value[i];
+    if (item && item.time && typeof item.count === 'number') {
+      labels.push(item.time);
+      data.push(item.count);
+    }
+  }
+  
+  console.log(`Processed ${data.length} data points for heat chart`);
+  
+  // Calculate the max count for color scaling
+  const maxCount = Math.max(...data, 1);
+  
+  // Create color function for heat map
   const getHeatColor = (intensity) => {
     // Scale from blue (cold) to red (hot)
     // We'll use HSL color model where hue ranges from 240 (blue) to 0 (red)
     const hue = 240 - (intensity * 240);
     return `hsl(${hue}, 100%, 50%)`;
   };
-
-  // Create scatter plot data with proper time mapping
-  const scatterData = timeHeatData.value.map((item, index) => {
-    // Convert time (HH:MM) to decimal hours for x-axis positioning
-    const [hours, minutes] = item.time.split(':').map(Number);
-    const timeValue = hours + (minutes / 60); // decimal hours (0-24)
-    
-    return {
-      x: timeValue,
-      y: item.count,
-      time: item.time,
-      count: item.count,
-      intensity: item.count / maxCount
-    };
-  }).filter(item => item.count > 0); // Only include non-zero points
-
+  
+  // Generate bar colors based on intensity
+  const barColors = data.map(count => getHeatColor(count / maxCount));
+  
+  // Create chart with heat map colors
   heatChartInstance.value = new Chart(ctx, {
-    type: 'scatter',
+    type: 'bar',
     data: {
+      labels: labels,
       datasets: [{
-        label: 'Activity Frequency',
-        data: scatterData,
-        backgroundColor: function(context) {
-          if (!context.raw) return 'rgba(0, 0, 0, 0)';
-          return getHeatColor(context.raw.intensity);
-        },
-        borderColor: 'rgba(0, 0, 0, 0.2)',
-        borderWidth: 1,
-        pointRadius: function(context) {
-          if (!context.raw) return 0;
-          // Scale the point size based on count, but with a minimum size
-          return Math.max(3, Math.min(10, 3 + (context.raw.count / maxCount) * 7));
-        },
-        pointHoverRadius: function(context) {
-          if (!context.raw) return 0;
-          return Math.max(5, Math.min(12, 5 + (context.raw.count / maxCount) * 7));
-        }
+        label: 'Activity',
+        data: data,
+        backgroundColor: barColors, // Use color intensity gradient
+        borderWidth: 0,
+        barPercentage: 1.0, // No gap between bars
+        categoryPercentage: 1.0 // No gap between bars
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 500 },
       scales: {
         y: {
           beginAtZero: true,
@@ -826,44 +808,62 @@ const updateHeatChart = () => {
             display: true,
             text: 'Days with Activity'
           },
-          suggestedMax: Math.min(maxCount * 1.1, Math.ceil(maxCount * 1.2))
+          grid: {
+            display: false // Remove Y-axis grid lines
+          }
         },
         x: {
-          min: 0,
-          max: 24,
           title: {
             display: true,
             text: 'Time of Day (24-hour)'
           },
           ticks: {
-            stepSize: 1,
-            callback: function(value) {
-              return `${Math.floor(value).toString().padStart(2, '0')}:00`;
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 24, // Show hour labels only
+            callback: function(value, index) {
+              // Show only hour marks (every 12 intervals = 1 hour)
+              if (index % 12 === 0) {
+                try {
+                  if (typeof value === 'string' && value.includes(':')) {
+                    const hourPart = value.split(':')[0];
+                    return hourPart; // Just show the hour number
+                  }
+                } catch (err) {
+                  console.log('Error in tick callback:', err);
+                }
+              }
+              return ''; // Hide other labels
             }
+          },
+          grid: {
+            display: false // Remove X-axis grid lines
           }
         }
       },
       plugins: {
-        tooltip: {
-          callbacks: {
-            title: function(tooltipItems) {
-              const item = tooltipItems[0].raw;
-              return `Time: ${item.time}`;
-            },
-            label: function(context) {
-              const item = context.raw;
-              return `${item.count} days with activity`;
-            }
-          }
-        },
         legend: {
           display: false
+        },
+        tooltip: {
+          enabled: true,
+          displayColors: false, // Clean up tooltip appearance
+          callbacks: {
+            title: function(tooltipItems) {
+              // Simple title showing the time
+              return `Time: ${tooltipItems[0].label || 'Unknown'}`;
+            },
+            label: function(context) {
+              // Simple label showing the count
+              return `${context.raw || 0} days with activity`;
+            }
+          }
         }
       }
     }
   });
   
-  console.log('Heat chart created successfully');
+  console.log('Simplified heat chart created successfully');
 };
 
 // Clean up charts when component is unmounted
