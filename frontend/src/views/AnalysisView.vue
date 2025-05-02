@@ -770,21 +770,10 @@ const updateHeatChart = () => {
   
   console.log(`Processed ${data.length} data points for heat chart`);
   
-  // Calculate the max count for color scaling
+  // Find maximum value for scaling
   const maxCount = Math.max(...data, 1);
   
-  // Create color function for heat map
-  const getHeatColor = (intensity) => {
-    // Scale from blue (cold) to red (hot)
-    // We'll use HSL color model where hue ranges from 240 (blue) to 0 (red)
-    const hue = 240 - (intensity * 240);
-    return `hsl(${hue}, 100%, 50%)`;
-  };
-  
-  // Generate bar colors based on intensity
-  const barColors = data.map(count => getHeatColor(count / maxCount));
-  
-  // Create chart with heat map colors
+  // Create chart with consistent vertical gradients
   heatChartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -792,7 +781,26 @@ const updateHeatChart = () => {
       datasets: [{
         label: 'Activity',
         data: data,
-        backgroundColor: barColors, // Use color intensity gradient
+        // Use a single gradient for all bars
+        backgroundColor: function(context) {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          
+          if (!chartArea) {
+            // This can happen when charts are not yet rendered
+            return 'rgba(139, 0, 0, 0.9)'; // Dark red as fallback
+          }
+          
+          // Create a flame-like gradient from black to red to orange to yellow
+          const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');       // Black at bottom
+          gradient.addColorStop(0.4, 'rgba(139, 0, 0, 0.9)');   // Dark red
+          gradient.addColorStop(0.6, 'rgba(255, 0, 0, 0.9)');   // Bright red
+          gradient.addColorStop(0.8, 'rgba(255, 165, 0, 0.9)'); // Orange
+          gradient.addColorStop(1, 'rgba(255, 255, 0, 0.9)');   // Yellow at top
+          
+          return gradient;
+        },
         borderWidth: 0,
         barPercentage: 1.0, // No gap between bars
         categoryPercentage: 1.0 // No gap between bars
