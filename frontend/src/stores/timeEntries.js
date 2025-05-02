@@ -239,7 +239,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     const newHours = Math.floor(totalMinutes / 60)
     const newMinutes = totalMinutes % 60
     
-    // Format back to 24-hour format (HH:MM)
+    // Format to 24-hour format with only HH:MM (no seconds)
     currentEntry.value[timeField] = 
       `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`
   }
@@ -261,7 +261,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       hours = (hours + 1) % 24  // Ensure we don't go past 24 hours
     }
     
-    // Format back to 24-hour format (HH:MM)
+    // Format to 24-hour format with only HH:MM (no seconds)
     currentEntry.value[timeField] = 
       `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
   }

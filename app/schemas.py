@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import date, time
 from typing import Optional, List
 
@@ -7,6 +7,14 @@ class TimeEntryBase(BaseModel):
     date: date
     start_time: time
     end_time: time
+    
+    # Validators to ensure time is always without seconds
+    @validator('start_time', 'end_time')
+    def format_time_without_seconds(cls, v):
+        if isinstance(v, time):
+            # Create a new time object with seconds and microseconds set to zero
+            return time(hour=v.hour, minute=v.minute)
+        return v
 
 
 class TimeEntryCreate(TimeEntryBase):

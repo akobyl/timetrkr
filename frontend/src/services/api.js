@@ -81,8 +81,18 @@ const formatUtils = {
   },
   
   formatTime(timeStr) {
-    // Format HH:MM to display time
-    return timeStr
+    // Ensure time is in HH:MM format, removing seconds if present
+    if (!timeStr) return '';
+    
+    // If there are seconds (HH:MM:SS), remove them
+    if (timeStr.includes(':')) {
+      const parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        return `${parts[0]}:${parts[1]}`;
+      }
+    }
+    
+    return timeStr;
   },
   
   formatMinutes(totalMinutes) {

@@ -329,7 +329,7 @@ const fetchTimeData = async () => {
       const hour = Math.floor(totalMinutes / 60);
       const minute = totalMinutes % 60;
       
-      // Format the time label (HH:MM)
+      // Format the time label as HH:MM (no seconds)
       const timeLabel = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       
       return {
