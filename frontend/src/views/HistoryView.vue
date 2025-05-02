@@ -3,14 +3,43 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h3>Time Entry History</h3>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center">
+          <button 
+            class="btn btn-sm btn-outline-secondary" 
+            @click="previousMonth"
+            :disabled="timeEntriesStore.isLoadingEntries"
+            title="Previous Month"
+          >
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          
           <input 
             type="month" 
             class="form-control" 
             v-model="timeEntriesStore.filterDate" 
             @change="loadEntries"
-            :disabled="timeEntriesStore.isLoadingEntries"
+            :disabled="timeEntriesStore.isLoadingEntries || showAllEntries"
           >
+          
+          <button 
+            class="btn btn-sm btn-outline-secondary" 
+            @click="nextMonth"
+            :disabled="timeEntriesStore.isLoadingEntries"
+            title="Next Month"
+          >
+            <i class="bi bi-chevron-right"></i>
+          </button>
+          
+          <button 
+            class="btn btn-sm"
+            :class="showAllEntries ? 'btn-primary' : 'btn-outline-primary'"
+            @click="toggleAllEntries"
+            :disabled="timeEntriesStore.isLoadingEntries"
+            title="Show All Entries"
+          >
+            All
+          </button>
+          
           <button 
             class="btn btn-outline-secondary" 
             @click="timeEntriesStore.toggleSortDirection"
@@ -82,7 +111,9 @@
           <strong>{{ timeEntriesStore.allEntries.length }}</strong> entries
         </div>
         <div>
-          <span class="badge bg-info">{{ timeEntriesStore.filterDate }}</span>
+          <span class="badge" :class="showAllEntries ? 'bg-primary' : 'bg-info'">
+            {{ showAllEntries ? 'All Entries' : timeEntriesStore.filterDate }}
+          </span>
         </div>
       </div>
     </div>
@@ -104,6 +135,7 @@ import { Modal } from 'bootstrap'
 
 const timeEntriesStore = useTimeEntriesStore()
 const editingEntry = ref(null)
+const showAllEntries = ref(false)
 
 // Sort direction icon
 const sortIcon = computed(() => {
@@ -114,7 +146,49 @@ const sortIcon = computed(() => {
 
 // Load entries
 async function loadEntries() {
-  await timeEntriesStore.loadAllTimeEntries()
+  await timeEntriesStore.loadAllTimeEntries(showAllEntries.value)
+}
+
+// Navigate to previous month
+function previousMonth() {
+  if (showAllEntries.value) return
+  
+  const [year, month] = timeEntriesStore.filterDate.split('-').map(Number)
+  let newMonth = month - 1
+  let newYear = year
+  
+  if (newMonth < 1) {
+    newMonth = 12
+    newYear--
+  }
+  
+  // Update filterDate (YYYY-MM format)
+  timeEntriesStore.filterDate = `${newYear}-${newMonth.toString().padStart(2, '0')}`
+  loadEntries()
+}
+
+// Navigate to next month
+function nextMonth() {
+  if (showAllEntries.value) return
+  
+  const [year, month] = timeEntriesStore.filterDate.split('-').map(Number)
+  let newMonth = month + 1
+  let newYear = year
+  
+  if (newMonth > 12) {
+    newMonth = 1
+    newYear++
+  }
+  
+  // Update filterDate (YYYY-MM format)
+  timeEntriesStore.filterDate = `${newYear}-${newMonth.toString().padStart(2, '0')}`
+  loadEntries()
+}
+
+// Toggle between showing all entries or filtered by month
+function toggleAllEntries() {
+  showAllEntries.value = !showAllEntries.value
+  loadEntries()
 }
 
 // Edit entry

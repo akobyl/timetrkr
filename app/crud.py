@@ -30,10 +30,16 @@ def create_time_entry(db: Session, time_entry: schemas.TimeEntryCreate, user_id:
     return db_time_entry
 
 
-def get_time_entries(db: Session, user_id: int, entry_date: date = None):
+def get_time_entries(db: Session, user_id: int, entry_date: date = None, month_filter: str = None):
     query = db.query(models.TimeEntry).filter(models.TimeEntry.user_id == user_id)
+    
+    # Filter by specific date if provided
     if entry_date:
         query = query.filter(models.TimeEntry.date == entry_date)
+    # If month_filter provided (in YYYY-MM format), filter by month
+    elif month_filter:
+        query = query.filter(models.TimeEntry.date.like(f"{month_filter}%"))
+        
     return query.all()
 
 

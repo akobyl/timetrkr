@@ -80,11 +80,17 @@ def create_time_entry(
 @app.get("/time-entries/", response_model=List[schemas.TimeEntry])
 def read_time_entries(
     entry_date: Optional[date] = None,
+    month_filter: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    print(f"Getting time entries for user {current_user.id}, date filter: {entry_date}")
-    entries = crud.get_time_entries(db=db, user_id=current_user.id, entry_date=entry_date)
+    print(f"Getting time entries for user {current_user.id}, date filter: {entry_date}, month filter: {month_filter}")
+    entries = crud.get_time_entries(
+        db=db, 
+        user_id=current_user.id, 
+        entry_date=entry_date,
+        month_filter=month_filter
+    )
     print(f"Found {len(entries)} entries")
     for entry in entries:
         print(f"Entry: id={entry.id}, date={entry.date}, start={entry.start_time}, end={entry.end_time}")

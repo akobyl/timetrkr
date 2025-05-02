@@ -267,41 +267,44 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   }
   
   // Load all time entries, optionally filtered by month
-  async function loadAllTimeEntries() {
+  async function loadAllTimeEntries(showAll = false) {
     try {
       isLoadingEntries.value = true
       
-      // Get all time entries
-      const response = await apiService.get('/time-entries/')
+      let response;
+      
+      // Use server-side filtering only when not in "show all" mode
+      if (!showAll && filterDate.value) {
+        // Make API request with month filter (YYYY-MM format)
+        response = await apiService.get('/time-entries/', {
+          params: { month_filter: filterDate.value }
+        });
+      } else {
+        // Get all time entries without filter
+        response = await apiService.get('/time-entries/');
+      }
       
       // Ensure response.data is an array
-      let entries = Array.isArray(response.data) ? response.data : []
+      let entries = Array.isArray(response.data) ? response.data : [];
       
       // If data isn't an array, log error for debugging
       if (!Array.isArray(response.data)) {
-        console.error('API response is not an array:', response.data)
-      }
-      
-      // Filter by month if needed
-      if (filterDate.value) {
-        entries = entries.filter(entry => 
-          entry.date.startsWith(filterDate.value)
-        )
+        console.error('API response is not an array:', response.data);
       }
       
       // Sort entries
-      allEntries.value = sortTimeEntries(entries, sortDirection.value)
+      allEntries.value = sortTimeEntries(entries, sortDirection.value);
       
-      return { success: true }
+      return { success: true };
     } catch (error) {
-      console.error('Error loading all time entries:', error)
-      allEntries.value = [] // Ensure we set an empty array on error
+      console.error('Error loading all time entries:', error);
+      allEntries.value = []; // Ensure we set an empty array on error
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Failed to load time entries' 
-      }
+      };
     } finally {
-      isLoadingEntries.value = false
+      isLoadingEntries.value = false;
     }
   }
   
