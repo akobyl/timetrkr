@@ -7,6 +7,12 @@
           <div class="input-group">
             <select class="form-select" v-model="selectedPreset" @change="applyDatePreset($event)" style="max-width: 180px;">
               <option value="">Custom Range</option>
+              <!-- Week-based options -->
+              <option value="current_week">Current Week</option>
+              <option value="last_week">Last Week</option>
+              <option value="last_2_weeks">Last 2 Weeks</option>
+              <option value="last_4_weeks">Last 4 Weeks</option>
+              <!-- Month-based options -->
               <option value="current_month">Current Month</option>
               <option value="last_month">Last Month</option>
               <option value="last_3_months">Last 3 Months</option>
@@ -158,23 +164,21 @@ const dailyChartInstance = ref(null)
 const weeklyChartInstance = ref(null)
 const heatChartInstance = ref(null)
 
-// Setup date range (default to current month)
+// Setup date range (default to current week)
 const setDefaultDateRange = () => {
   // Reset manual input flag
   manualDateInput = false
   
   const now = new Date()
-  // Get first day of current month
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  // Get last day of current month
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  // Get current week dates (Sunday to Saturday)
+  const { start, end } = getWeekDates(now)
   
   // Format as YYYY-MM-DD in local time
   endDate.value = formatYYYYMMDD(end)
   startDate.value = formatYYYYMMDD(start)
   
-  // Set preset selection to current month
-  selectedPreset.value = 'current_month'
+  // Set preset selection to current week
+  selectedPreset.value = 'current_week'
 }
 
 // Handle date presets
@@ -186,6 +190,40 @@ const applyDatePreset = (event) => {
   let start, end
   
   switch (selectedPreset.value) {
+    // Week-based options
+    case 'current_week':
+      // Current week (Sunday to Saturday)
+      const currentWeek = getWeekDates(now);
+      start = currentWeek.start;
+      end = currentWeek.end;
+      break;
+      
+    case 'last_week':
+      // Last week (Sunday to Saturday of previous week)
+      const lastWeek = new Date(now);
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      const lastWeekDates = getWeekDates(lastWeek);
+      start = lastWeekDates.start;
+      end = lastWeekDates.end;
+      break;
+      
+    case 'last_2_weeks':
+      // Last 2 weeks (from Sunday 2 weeks ago to Saturday of current week)
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      start = getWeekDates(twoWeeksAgo).start;
+      end = getWeekDates(now).end;
+      break;
+      
+    case 'last_4_weeks':
+      // Last 4 weeks (from Sunday 4 weeks ago to Saturday of current week)
+      const fourWeeksAgo = new Date(now);
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      start = getWeekDates(fourWeeksAgo).start;
+      end = getWeekDates(now).end;
+      break;
+      
+    // Month-based options
     case 'current_month':
       // First and last day of current month
       start = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -466,6 +504,26 @@ const getWeekOfMonth = (date) => {
   const day = d.getDate()
   // Divide by 7 and round up to get the week number (1-5)
   return Math.ceil(day / 7)
+}
+
+// Helper function to get the start date (Sunday) and end date (Saturday) of a week
+const getWeekDates = (date) => {
+  // Create a copy of the date to avoid modifying the original
+  const d = new Date(date)
+  
+  // Calculate start date (Sunday)
+  const day = d.getDay() // 0 = Sunday, 1 = Monday, etc.
+  const diff = d.getDate() - day // Adjust to get Sunday
+  const start = new Date(d)
+  start.setDate(diff)
+  start.setHours(0, 0, 0, 0) // Set to start of day
+  
+  // Calculate end date (Saturday = Sunday + 6 days)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  end.setHours(23, 59, 59, 999) // Set to end of day
+  
+  return { start, end }
 }
 
 // Helper to generate all dates in a range (inclusive of both start and end)
