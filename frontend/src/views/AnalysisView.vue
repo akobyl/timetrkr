@@ -53,6 +53,13 @@
             </div>
           </div>
 
+          <div class="mb-4 mt-5">
+            <h4>Time of Day Heat Map</h4>
+            <div style="position: relative; height: 250px; width: 100%;">
+              <canvas ref="heatChart"></canvas>
+            </div>
+          </div>
+
           <div class="mt-5">
             <h4>Summary</h4>
             <div class="row">
@@ -99,10 +106,33 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { apiService } from '../services/api'
-import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
+import { 
+  Chart, 
+  BarController, 
+  BarElement, 
+  LineController,
+  LineElement,
+  PointElement,
+  ScatterController,
+  CategoryScale, 
+  LinearScale, 
+  Tooltip, 
+  Legend 
+} from 'chart.js'
 
 // Register Chart.js components
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
+Chart.register(
+  BarController, 
+  BarElement, 
+  LineController,
+  LineElement,
+  PointElement,
+  ScatterController,
+  CategoryScale, 
+  LinearScale, 
+  Tooltip, 
+  Legend
+)
 
 // Data
 const startDate = ref('')
@@ -111,10 +141,13 @@ const isLoading = ref(false)
 const error = ref(null)
 const dailyHours = ref([])
 const weeklyHours = ref([])
+const timeHeatData = ref([])
 const histogramChart = ref(null)
 const weeklyChart = ref(null)
+const heatChart = ref(null)
 const dailyChartInstance = ref(null)
 const weeklyChartInstance = ref(null)
+const heatChartInstance = ref(null)
 
 // Setup date range (default to current year)
 const setDefaultDateRange = () => {
@@ -255,10 +288,63 @@ const fetchTimeData = async () => {
     // We want to show all weeks in the selected date range, even if they have 0 hours
     // This ensures the weekly chart covers the exact same date range as the daily chart
 
-    console.log('Processed daily hours:', dailyHours.value.length)
-    console.log('Processed weekly hours:', weeklyHours.value.length)
-    console.log('Sample daily entries:', dailyHours.value.slice(0, 3))
-    console.log('Sample weekly entries:', weeklyHours.value.slice(0, 3))
+    // Calculate the heat map data (time of day frequency)
+    // We'll create 5-minute blocks throughout the day (288 blocks)
+    const timeBlocks = 288; // 24 hours * 12 blocks per hour (5-minute intervals)
+    const timeBlockCounts = new Array(timeBlocks).fill(0);
+    const daysWithEntries = new Set(); // Track unique days with entries
+    
+    // Process each time entry
+    entries.forEach(entry => {
+      // Only process entries within the selected date range
+      if (entry.date < startDate.value || entry.date > endDate.value) return;
+      
+      // Add this day to our set of days with entries
+      daysWithEntries.add(entry.date);
+      
+      // Convert start and end times to minute offsets in the day
+      const [startHour, startMin] = entry.start_time.split(':').map(Number);
+      const [endHour, endMin] = entry.end_time.split(':').map(Number);
+      
+      // Calculate start and end blocks
+      let startBlock = Math.floor((startHour * 60 + startMin) / 5);
+      let endBlock = Math.floor((endHour * 60 + endMin) / 5);
+      
+      // Handle overnight entries
+      if (endBlock < startBlock) {
+        endBlock += timeBlocks;
+      }
+      
+      // Mark each 5-minute block in this time range
+      for (let block = startBlock; block <= endBlock; block++) {
+        const actualBlock = block % timeBlocks; // Wrap around for overnight entries
+        timeBlockCounts[actualBlock]++;
+      }
+    });
+    
+    // Create the heat map data structure
+    timeHeatData.value = timeBlockCounts.map((count, index) => {
+      // Calculate the hour and minute for this block
+      const totalMinutes = index * 5;
+      const hour = Math.floor(totalMinutes / 60);
+      const minute = totalMinutes % 60;
+      
+      // Format the time label (HH:MM)
+      const timeLabel = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      return {
+        time: timeLabel,
+        count: count,
+        // Calculate a normalized value for color intensity (0-1)
+        intensity: daysWithEntries.size > 0 ? count / daysWithEntries.size : 0
+      };
+    });
+    
+    console.log('Processed daily hours:', dailyHours.value.length);
+    console.log('Processed weekly hours:', weeklyHours.value.length);
+    console.log('Generated heat map data with', timeHeatData.value.length, 'time blocks');
+    console.log('Sample daily entries:', dailyHours.value.slice(0, 3));
+    console.log('Sample weekly entries:', weeklyHours.value.slice(0, 3));
 
   } catch (err) {
     console.error('Error fetching time data:', err)
@@ -270,6 +356,7 @@ const fetchTimeData = async () => {
     if (dailyHours.value.length > 0) {
       updateDailyChart()
       updateWeeklyChart()
+      updateHeatChart()
     }
   }
 }
@@ -487,6 +574,139 @@ onMounted(async () => {
   console.log('Component mounted successfully')
 })
 
+// Update heat chart
+const updateHeatChart = () => {
+  if (!heatChart.value) {
+    console.error('Heat chart canvas ref is not available yet.');
+    return;
+  }
+
+  // Destroy existing chart instance if it exists
+  if (heatChartInstance.value) {
+    console.log('Destroying existing heat chart instance');
+    heatChartInstance.value.destroy();
+    heatChartInstance.value = null;
+  }
+
+  // We need to consolidate the data for better visualization
+  // Let's group by hour for the x-axis labels to avoid overcrowding
+  const hourlyLabels = [];
+  for (let hour = 0; hour < 24; hour++) {
+    hourlyLabels.push(`${hour.toString().padStart(2, '0')}:00`);
+  }
+
+  // Prepare our dataset for the heat map
+  // We'll use a line chart with custom point styling to simulate a heat map
+  const data = timeHeatData.value.map(item => item.count);
+  
+  // Find the maximum count for scaling the color intensity
+  const maxCount = Math.max(...data, 1);
+
+  // Create a new chart instance
+  console.log('Creating heat chart instance');
+  const ctx = heatChart.value.getContext('2d');
+  if (!ctx) {
+    console.error('Failed to get heat chart canvas context');
+    return;
+  }
+  
+  // Helper function to generate a color based on intensity
+  const getHeatColor = (intensity) => {
+    // Scale from blue (cold) to red (hot)
+    // We'll use HSL color model where hue ranges from 240 (blue) to 0 (red)
+    const hue = 240 - (intensity * 240);
+    return `hsl(${hue}, 100%, 50%)`;
+  };
+
+  // Create scatter plot data with proper time mapping
+  const scatterData = timeHeatData.value.map((item, index) => {
+    // Convert time (HH:MM) to decimal hours for x-axis positioning
+    const [hours, minutes] = item.time.split(':').map(Number);
+    const timeValue = hours + (minutes / 60); // decimal hours (0-24)
+    
+    return {
+      x: timeValue,
+      y: item.count,
+      time: item.time,
+      count: item.count,
+      intensity: item.count / maxCount
+    };
+  }).filter(item => item.count > 0); // Only include non-zero points
+
+  heatChartInstance.value = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Activity Frequency',
+        data: scatterData,
+        backgroundColor: function(context) {
+          if (!context.raw) return 'rgba(0, 0, 0, 0)';
+          return getHeatColor(context.raw.intensity);
+        },
+        borderColor: 'rgba(0, 0, 0, 0.2)',
+        borderWidth: 1,
+        pointRadius: function(context) {
+          if (!context.raw) return 0;
+          // Scale the point size based on count, but with a minimum size
+          return Math.max(3, Math.min(10, 3 + (context.raw.count / maxCount) * 7));
+        },
+        pointHoverRadius: function(context) {
+          if (!context.raw) return 0;
+          return Math.max(5, Math.min(12, 5 + (context.raw.count / maxCount) * 7));
+        }
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 500 },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Days with Activity'
+          },
+          suggestedMax: Math.min(maxCount * 1.1, Math.ceil(maxCount * 1.2))
+        },
+        x: {
+          min: 0,
+          max: 24,
+          title: {
+            display: true,
+            text: 'Time of Day (24-hour)'
+          },
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              return `${Math.floor(value).toString().padStart(2, '0')}:00`;
+            }
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: function(tooltipItems) {
+              const item = tooltipItems[0].raw;
+              return `Time: ${item.time}`;
+            },
+            label: function(context) {
+              const item = context.raw;
+              return `${item.count} days with activity`;
+            }
+          }
+        },
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+  
+  console.log('Heat chart created successfully');
+};
+
 // Clean up charts when component is unmounted
 onUnmounted(() => {
   if (dailyChartInstance.value) {
@@ -499,6 +719,12 @@ onUnmounted(() => {
     console.log('Cleaning up weekly chart instance on unmount')
     weeklyChartInstance.value.destroy()
     weeklyChartInstance.value = null
+  }
+  
+  if (heatChartInstance.value) {
+    console.log('Cleaning up heat chart instance on unmount')
+    heatChartInstance.value.destroy()
+    heatChartInstance.value = null
   }
 })
 </script>
