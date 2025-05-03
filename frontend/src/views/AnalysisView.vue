@@ -1,34 +1,123 @@
 <template>
   <div class="analysis-view">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h3>Time Analysis</h3>
-        <div class="date-controls">
-          <div class="input-group">
-            <select class="form-select" v-model="selectedPreset" @change="applyDatePreset($event)"
-              style="max-width: 180px;">
-              <option value="">Custom Range</option>
-              <!-- Week-based options -->
-              <option value="current_week">Current Week</option>
-              <option value="last_week">Last Week</option>
-              <option value="last_2_weeks">Last 2 Weeks</option>
-              <option value="last_4_weeks">Last 4 Weeks</option>
-              <!-- Month-based options -->
-              <option value="current_month">Current Month</option>
-              <option value="last_month">Last Month</option>
-              <option value="last_3_months">Last 3 Months</option>
-              <option value="last_6_months">Last 6 Months</option>
-              <option value="this_year">This Year</option>
-            </select>
-            <span class="input-group-text">From</span>
-            <input type="date" class="form-control" v-model="startDate" :max="endDate" @change="manualDateInput = true">
-            <span class="input-group-text">To</span>
-            <input type="date" class="form-control" v-model="endDate" :min="startDate" @change="manualDateInput = true">
-            <button class="btn btn-primary" @click="fetchTimeData" :disabled="isLoading">
+      <div class="card-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+          <h3 class="mb-3 mb-lg-0">Time Analysis</h3>
+          
+          <!-- Desktop layout -->
+          <div class="d-none d-lg-flex date-controls-wrapper align-items-center">
+            <div class="dropdown date-preset-dropdown me-3">
+              <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                      id="datePresetDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ selectedPreset ? getPresetLabel(selectedPreset) : 'Select Range' }}
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="datePresetDropdown">
+                <!-- Week-based options -->
+                <li><h6 class="dropdown-header">Weeks</h6></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('current_week')">Current Week</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_week')">Last Week</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_2_weeks')">Last 2 Weeks</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_4_weeks')">Last 4 Weeks</a></li>
+                <!-- Month-based options -->
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Months</h6></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('current_month')">Current Month</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_month')">Last Month</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_3_months')">Last 3 Months</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_6_months')">Last 6 Months</a></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('this_year')">This Year</a></li>
+                <!-- Custom range option -->
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="selectedPreset = ''">Custom Range</a></li>
+              </ul>
+            </div>
+            
+            <div class="desktop-date-inputs d-flex" v-show="!selectedPreset || selectedPreset === ''">
+              <div class="input-group me-2" style="width: 230px;">
+                <span class="input-group-text">From</span>
+                <input type="date" class="form-control" v-model="startDate" :max="endDate" @change="manualDateInput = true">
+              </div>
+              <div class="input-group me-2" style="width: 230px;">
+                <span class="input-group-text">To</span>
+                <input type="date" class="form-control" v-model="endDate" :min="startDate" @change="manualDateInput = true">
+              </div>
+            </div>
+            
+            <!-- Desktop apply button (single button for both preset and custom) -->
+            <button class="btn btn-primary ms-2" 
+                  @click="fetchTimeData" 
+                  :disabled="isLoading">
               <span v-if="isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
               Apply
             </button>
           </div>
+          
+          <!-- Mobile layout -->
+          <div class="d-block d-lg-none date-preset-group">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                    id="mobilePresetDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ selectedPreset ? getPresetLabel(selectedPreset) : 'Select Range' }}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="mobilePresetDropdown">
+              <!-- Week-based options -->
+              <li><h6 class="dropdown-header">Weeks</h6></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('current_week')">Current Week</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_week')">Last Week</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_2_weeks')">Last 2 Weeks</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_4_weeks')">Last 4 Weeks</a></li>
+              <!-- Month-based options -->
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">Months</h6></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('current_month')">Current Month</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_month')">Last Month</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_3_months')">Last 3 Months</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('last_6_months')">Last 6 Months</a></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectPreset('this_year')">This Year</a></li>
+              <!-- Custom range option -->
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" @click.prevent="selectedPreset = ''">Custom Range</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Mobile custom date inputs -->
+        <div class="d-block d-lg-none date-controls-custom mt-2" v-show="!selectedPreset || selectedPreset === ''">
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="input-group">
+                <span class="input-group-text">From</span>
+                <input type="date" class="form-control" v-model="startDate" :max="endDate" @change="manualDateInput = true">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="input-group">
+                <span class="input-group-text">To</span>
+                <input type="date" class="form-control" v-model="endDate" :min="startDate" @change="manualDateInput = true">
+              </div>
+            </div>
+            <div class="col-12 mt-2">
+              <button class="btn btn-primary w-100" @click="fetchTimeData" :disabled="isLoading">
+                <span v-if="isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Mobile apply button for presets -->
+        <div class="d-block d-lg-none mt-2" v-show="selectedPreset && selectedPreset !== ''">
+          <button class="btn btn-primary w-100" @click="fetchTimeData" :disabled="isLoading">
+            <span v-if="isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+            Apply
+          </button>
+        </div>
+        
+        <!-- Selected date range display -->
+        <div class="selected-date-range mt-2" v-if="startDate && endDate">
+          <small class="text-muted">
+            Viewing data from {{ formatDateDisplay(startDate) }} to {{ formatDateDisplay(endDate) }}
+          </small>
         </div>
       </div>
       <div class="card-body">
@@ -183,7 +272,7 @@ const setDefaultDateRange = () => {
 }
 
 // Handle date presets
-const applyDatePreset = (event) => {
+const applyDatePreset = (event = null) => {
   // Reset manual input flag since we're applying a preset
   manualDateInput = false
 
@@ -703,6 +792,47 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+// Format date for the display below the date picker
+const formatDateDisplay = (dateStr) => {
+  if (!dateStr) return '';
+  
+  const parts = dateStr.split('-');
+  const year = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day = parseInt(parts[2]);
+  
+  const date = new Date(year, month, day);
+  return date.toLocaleDateString(undefined, { 
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+// Get friendly label for preset options
+const getPresetLabel = (preset) => {
+  const presetLabels = {
+    'current_week': 'Current Week',
+    'last_week': 'Last Week',
+    'last_2_weeks': 'Last 2 Weeks',
+    'last_4_weeks': 'Last 4 Weeks',
+    'current_month': 'Current Month',
+    'last_month': 'Last Month',
+    'last_3_months': 'Last 3 Months',
+    'last_6_months': 'Last 6 Months',
+    'this_year': 'This Year',
+    '': 'Custom Range'
+  };
+  
+  return presetLabels[preset] || 'Select Range';
+}
+
+// Handle preset selection 
+const selectPreset = (preset) => {
+  selectedPreset.value = preset;
+  applyDatePreset();
+}
+
 // Update daily chart
 const updateDailyChart = () => {
   if (!histogramChart.value) {
@@ -1048,7 +1178,63 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.date-controls {
-  min-width: 450px;
+/* Desktop styling */
+.date-controls-wrapper {
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.date-preset-dropdown .btn {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 150px;
+}
+
+.desktop-date-inputs {
+  flex-wrap: nowrap;
+}
+
+.dropdown-menu {
+  min-width: 200px;
+}
+
+/* Mobile styling */
+.date-preset-group {
+  width: 100%;
+}
+
+.date-preset-group .btn {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.date-controls-custom {
+  width: 100%;
+}
+
+.selected-date-range {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* Additional mobile adjustments */
+@media (max-width: 992px) {
+  .card-header {
+    padding: 1rem 0.75rem;
+  }
+  
+  .input-group-text {
+    padding: 0.375rem 0.5rem;
+  }
+}
+
+/* Small mobile screens */
+@media (max-width: 576px) {
+  .card-header h3 {
+    font-size: 1.5rem;
+  }
 }
 </style>
