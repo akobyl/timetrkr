@@ -5,7 +5,8 @@
         <h3>Time Analysis</h3>
         <div class="date-controls">
           <div class="input-group">
-            <select class="form-select" v-model="selectedPreset" @change="applyDatePreset($event)" style="max-width: 180px;">
+            <select class="form-select" v-model="selectedPreset" @change="applyDatePreset($event)"
+              style="max-width: 180px;">
               <option value="">Custom Range</option>
               <!-- Week-based options -->
               <option value="current_week">Current Week</option>
@@ -120,31 +121,31 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { apiService } from '../services/api'
-import { 
-  Chart, 
-  BarController, 
-  BarElement, 
+import {
+  Chart,
+  BarController,
+  BarElement,
   LineController,
   LineElement,
   PointElement,
   ScatterController,
-  CategoryScale, 
-  LinearScale, 
-  Tooltip, 
-  Legend 
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend
 } from 'chart.js'
 
 // Register Chart.js components
 Chart.register(
-  BarController, 
-  BarElement, 
+  BarController,
+  BarElement,
   LineController,
   LineElement,
   PointElement,
   ScatterController,
-  CategoryScale, 
-  LinearScale, 
-  Tooltip, 
+  CategoryScale,
+  LinearScale,
+  Tooltip,
   Legend
 )
 
@@ -168,15 +169,15 @@ const heatChartInstance = ref(null)
 const setDefaultDateRange = () => {
   // Reset manual input flag
   manualDateInput = false
-  
+
   const now = new Date()
   // Get current week dates (Sunday to Saturday)
   const { start, end } = getWeekDates(now)
-  
+
   // Format as YYYY-MM-DD in local time
   endDate.value = formatYYYYMMDD(end)
   startDate.value = formatYYYYMMDD(start)
-  
+
   // Set preset selection to current week
   selectedPreset.value = 'current_week'
 }
@@ -185,10 +186,10 @@ const setDefaultDateRange = () => {
 const applyDatePreset = (event) => {
   // Reset manual input flag since we're applying a preset
   manualDateInput = false
-  
+
   const now = new Date()
   let start, end
-  
+
   switch (selectedPreset.value) {
     // Week-based options
     case 'current_week':
@@ -197,7 +198,7 @@ const applyDatePreset = (event) => {
       start = thisWeek.start;
       end = thisWeek.end;
       break;
-      
+
     case 'last_week':
       // Last week (Sunday to Saturday of previous week)
       const lastWeek = new Date(now);
@@ -206,7 +207,7 @@ const applyDatePreset = (event) => {
       start = lastWeekDates.start;
       end = lastWeekDates.end;
       break;
-      
+
     case 'last_2_weeks':
       // Last 2 weeks - using exact 14 days from today
       // Get the current week's Sunday
@@ -217,7 +218,7 @@ const applyDatePreset = (event) => {
       start = exactTwoWeeksAgo;
       end = currentWeek2.end;
       break;
-      
+
     case 'last_4_weeks':
       // Last 4 weeks - using exact 28 days from today
       // Get the current week's end date
@@ -228,50 +229,50 @@ const applyDatePreset = (event) => {
       start = exactFourWeeksAgo;
       end = currentWeekEnd;
       break;
-      
+
     // Month-based options
     case 'current_month':
       // First and last day of current month
       start = new Date(now.getFullYear(), now.getMonth(), 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
-      
+
     case 'last_month':
       // Last month: 1st to last day of previous month
       start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       end = new Date(now.getFullYear(), now.getMonth(), 0)
       break
-      
+
     case 'last_3_months':
       // Last 3 months: 1st day of month from 3 months ago to last day of current month
       start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
-      
+
     case 'last_6_months':
       // Last 6 months: 1st day of month from 6 months ago to last day of current month
       start = new Date(now.getFullYear(), now.getMonth() - 5, 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
-      
+
     case 'this_year':
       // This year: January 1st to last day of current month
       start = new Date(now.getFullYear(), 0, 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
-      
+
     default:
       // Custom range - do nothing
       return
   }
-  
+
   // Format date values consistently in local time
   startDate.value = formatYYYYMMDD(start)
   endDate.value = formatYYYYMMDD(end)
-  
+
   // Log the date range for debugging
   console.log(`Date range applied: ${startDate.value} to ${endDate.value}`)
-  
+
   // Fetch data with new range
   fetchTimeData()
 }
@@ -316,11 +317,11 @@ const fetchTimeData = async () => {
     // Generate a date range array (all days between start and end)
     const dateRange = generateDateRange(startDate.value, endDate.value)
     console.log('Date range generated:', dateRange.length, 'days')
-    console.log('Date range start:', dateRange[0], 'end:', dateRange[dateRange.length-1])
-    
+    console.log('Date range start:', dateRange[0], 'end:', dateRange[dateRange.length - 1])
+
     // Verify that the date range includes the end date
-    if (dateRange.length > 0 && dateRange[dateRange.length-1] !== endDate.value) {
-      console.warn(`Warning: Date range does not include the end date! End date: ${endDate.value}, Last date in range: ${dateRange[dateRange.length-1]}`)
+    if (dateRange.length > 0 && dateRange[dateRange.length - 1] !== endDate.value) {
+      console.warn(`Warning: Date range does not include the end date! End date: ${endDate.value}, Last date in range: ${dateRange[dateRange.length - 1]}`)
     }
 
     // Calculate daily total hours
@@ -358,33 +359,33 @@ const fetchTimeData = async () => {
     // Calculate weekly hours
     // Group days into Sunday-Saturday weeks and sum up hours
     const weekMap = new Map()
-    
+
     // Parse start and end dates to use for boundary checking
     const startDateObj = new Date(startDate.value)
     const endDateObj = new Date(endDate.value)
-    
+
     // First, get the exact Sunday of the selected start date
     // Use the exact start date from selected range, don't go back to previous Sunday
     // This ensures we don't include weeks that are not in the selected range
     const targetSunday = new Date(startDateObj)
-    
+
     console.log(`Original start date: ${startDateObj.toISOString()} (day of week: ${startDateObj.getDay()})`)
-    
+
     // Only adjust to previous Sunday if explicitly requested via startOnSunday flag
     const startOnSunday = false // Set to true if you want to always start on Sunday
-    
+
     if (startOnSunday && targetSunday.getDay() > 0) {
       const dayOfWeek = targetSunday.getDay()
       targetSunday.setDate(targetSunday.getDate() - dayOfWeek)
       console.log(`Adjusted to previous Sunday: ${targetSunday.toISOString()}`)
     }
-    
+
     // For each Sunday-Saturday week that intersects our date range
     let weekStart = new Date(targetSunday)
     let weekIndex = 1 // Start with Week 1
-    
+
     console.log("Starting week calculation with first Sunday:", weekStart.toISOString())
-    
+
     // Only generate weeks that have their start date within our date range
     // This prevents generating weeks that start before our range
     while (weekStart <= endDateObj) {
@@ -396,31 +397,25 @@ const fetchTimeData = async () => {
         weekStart.setDate(weekStart.getDate() + 7)
         continue
       }
-      
+
       // Calculate end of this week (Saturday)
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekStart.getDate() + 6)
-      
+
       // Create a unique key for this week
       const weekKey = `Week-${formatYYYYMMDD(weekStart)}`
-      
+
       // Convert to strings for formatting properly
       const weekStartStr = weekStart.toISOString().split('T')[0]
       const weekEndStr = weekEnd.toISOString().split('T')[0]
-      
+
       // Format dates directly using Date objects to avoid any inconsistencies
       // Get the formatted display strings directly from the Date objects
       const displayStartStr = weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
       const displayEndStr = weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-      
-      // Log detailed info for debugging
-      console.log(`Week ${weekIndex} dates:`)
-      console.log(`- Start: ${weekStart.toISOString()} (${weekStart.getDay() === 0 ? 'Sunday' : 'NOT SUNDAY'})`)
-      console.log(`- End: ${weekEnd.toISOString()} (${weekEnd.getDay() === 6 ? 'Saturday' : 'NOT SATURDAY'})`)
-      console.log(`- Display range: ${displayStartStr} - ${displayEndStr}`)
-      
+
       console.log(`Week ${weekIndex}: ${weekStartStr} (${displayStartStr}) to ${weekEndStr} (${displayEndStr})`)
-      
+
       // Create an entry for this week
       weekMap.set(weekKey, {
         weekNumber: weekIndex,
@@ -432,37 +427,37 @@ const fetchTimeData = async () => {
         hours: 0,
         sortKey: weekStart.getTime() // Sort by start date timestamp
       })
-      
+
       // Move to next week
       weekStart = new Date(weekStart)
       weekStart.setDate(weekStart.getDate() + 7)
       weekIndex++
     }
-    
+
     // Now, assign each day's hours to the appropriate week
     // Only process days that fall exactly within our date range
     dailyHours.value.forEach(day => {
       if (!day.rawDate) return
-      
+
       const date = new Date(day.rawDate)
-      
+
       // Skip dates outside our range (strict check)
       if (date < startDateObj || date > endDateObj) {
         console.log(`Skipping out-of-range date: ${day.rawDate}`)
         return
       }
-      
+
       // Find which week this day belongs to, but only within the selected range
       // For example, if we've selected Apr 20-26, we only want days to go into that week
       // and not into the previous week (Apr 13-19) if a day happens to fall in that range
-      
+
       // Check each of our predefined weeks
       let found = false
       for (const [weekKey, weekData] of weekMap.entries()) {
         // Check if this day falls within this week's range
         const weekStartDate = new Date(weekData.weekStart)
         const weekEndDate = new Date(weekData.weekEnd)
-        
+
         // Day must be within this specific week's range
         if (date >= weekStartDate && date <= weekEndDate) {
           // Add hours to this week
@@ -471,12 +466,12 @@ const fetchTimeData = async () => {
           break
         }
       }
-      
+
       if (!found) {
         console.warn(`Day ${day.rawDate} doesn't match any week in range ${startDate.value} to ${endDate.value}`)
       }
     })
-    
+
     // Convert map to array, filter with stronger criteria, and sort by week number
     weeklyHours.value = Array.from(weekMap.values())
       .filter(week => {
@@ -484,24 +479,22 @@ const fetchTimeData = async () => {
         if (week.hours > 0) {
           return true
         }
-        
+
         // For zero-hour weeks, apply stricter filtering
         const weekStart = new Date(week.weekStart)
         const weekEnd = new Date(week.weekEnd)
-        
+
         // If the week is completely contained within our date range, keep it
         // This ensures we show zero-hour weeks that are explicitly in our range
         if (weekStart >= startDateObj && weekEnd <= endDateObj) {
-          console.log(`Keeping zero-hour week fully within range: ${week.weekLabel}`)
           return true
         }
-        
+
         // For partial overlap weeks with zero hours, filter them out
-        console.log(`Filtering out zero-hour week with partial overlap: ${week.weekLabel}`)
         return false
       })
       .sort((a, b) => a.sortKey - b.sortKey)
-    
+
     // We want to show all weeks in the selected date range, even if they have 0 hours
     // This ensures the weekly chart covers the exact same date range as the daily chart
 
@@ -510,45 +503,45 @@ const fetchTimeData = async () => {
     const timeBlocks = 288; // 24 hours * 12 blocks per hour (5-minute intervals)
     const timeBlockCounts = new Array(timeBlocks).fill(0);
     const daysWithEntries = new Set(); // Track unique days with entries
-    
+
     // Process each time entry
     entries.forEach(entry => {
       // Only process entries within the selected date range
       if (entry.date < startDate.value || entry.date > endDate.value) return;
-      
+
       // Add this day to our set of days with entries
       daysWithEntries.add(entry.date);
-      
+
       // Convert start and end times to minute offsets in the day
       const [startHour, startMin] = entry.start_time.split(':').map(Number);
       const [endHour, endMin] = entry.end_time.split(':').map(Number);
-      
+
       // Calculate start and end blocks
       let startBlock = Math.floor((startHour * 60 + startMin) / 5);
       let endBlock = Math.floor((endHour * 60 + endMin) / 5);
-      
+
       // Handle overnight entries
       if (endBlock < startBlock) {
         endBlock += timeBlocks;
       }
-      
+
       // Mark each 5-minute block in this time range
       for (let block = startBlock; block <= endBlock; block++) {
         const actualBlock = block % timeBlocks; // Wrap around for overnight entries
         timeBlockCounts[actualBlock]++;
       }
     });
-    
+
     // Create the heat map data structure
     timeHeatData.value = timeBlockCounts.map((count, index) => {
       // Calculate the hour and minute for this block
       const totalMinutes = index * 5;
       const hour = Math.floor(totalMinutes / 60);
       const minute = totalMinutes % 60;
-      
+
       // Format the time label as HH:MM (no seconds)
       const timeLabel = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-      
+
       return {
         time: timeLabel,
         count: count,
@@ -556,12 +549,7 @@ const fetchTimeData = async () => {
         intensity: daysWithEntries.size > 0 ? count / daysWithEntries.size : 0
       };
     });
-    
-    console.log('Processed daily hours:', dailyHours.value.length);
-    console.log('Processed weekly hours:', weeklyHours.value.length);
-    console.log('Generated heat map data with', timeHeatData.value.length, 'time blocks');
-    console.log('Sample daily entries:', dailyHours.value.slice(0, 3));
-    console.log('Sample weekly entries:', weeklyHours.value.slice(0, 3));
+
 
   } catch (err) {
     console.error('Error fetching time data:', err)
@@ -592,10 +580,10 @@ const getWeekOfMonth = (date) => {
 const getWeekDates = (date) => {
   // Create a copy of the date to avoid modifying the original
   const d = new Date(date)
-  
+
   // Calculate start date (Sunday) - go back to the Sunday of this week
   const day = d.getDay() // 0 = Sunday, 1 = Monday, etc.
-  
+
   // Create a new date for Sunday (beginning of week)
   const start = new Date(d)
   // If not already Sunday, go back to the previous Sunday
@@ -603,71 +591,71 @@ const getWeekDates = (date) => {
     start.setDate(d.getDate() - day)
   }
   start.setHours(0, 0, 0, 0) // Set to start of day
-  
+
   // Calculate end date (Saturday = Sunday + 6 days)
   const end = new Date(start)
   end.setDate(start.getDate() + 6)
   end.setHours(23, 59, 59, 999) // Set to end of day
-  
+
   console.log(`Week dates for ${d.toISOString()}: ${start.toISOString()} to ${end.toISOString()}`)
-  
+
   return { start, end }
 }
 
 // Helper to generate all dates in a range (inclusive of both start and end)
 const generateDateRange = (start, end) => {
   console.log(`Generating date range from ${start} to ${end}`)
-  
+
   // Start with empty array
   const dates = []
-  
+
   // Parse dates by components to avoid timezone issues
   const [startYear, startMonth, startDay] = start.split('-').map(Number)
   const [endYear, endMonth, endDay] = end.split('-').map(Number)
-  
+
   // Create Date objects for comparison (set to noon to avoid timezone issues)
   const startDate = new Date(startYear, startMonth - 1, startDay, 12, 0, 0)
   const endDate = new Date(endYear, endMonth - 1, endDay, 12, 0, 0)
-  
+
   // Extra safety check
   if (startDate > endDate) {
     console.error('Start date is after end date')
     return dates
   }
-  
+
   // Initialize current date to start date
   let currentYear = startYear
   let currentMonth = startMonth - 1 // JS months are 0-indexed
   let currentDay = startDay
-  
+
   // Keep generating dates until we've reached or passed the end date
   while (true) {
     // Create a date object for the current date (set to noon)
     const currentDate = new Date(currentYear, currentMonth, currentDay, 12, 0, 0)
-    
+
     // Stop if we've passed the end date
     if (currentDate > endDate) {
       break
     }
-    
+
     // Format current date and add to array
     const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
     dates.push(formattedDate)
-    
+
     // If we've reached the end date, we're done
     if (currentYear === endYear && currentMonth === endMonth - 1 && currentDay === endDay) {
       break
     }
-    
+
     // Advance to next day
     currentDay++
-    
+
     // Check if we need to roll over to next month
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
     if (currentDay > daysInMonth) {
       currentDay = 1
       currentMonth++
-      
+
       // Check if we need to roll over to next year
       if (currentMonth > 11) {
         currentMonth = 0
@@ -675,14 +663,14 @@ const generateDateRange = (start, end) => {
       }
     }
   }
-  
+
   // Add debugging info
   if (dates.length > 0) {
-    console.log(`Generated ${dates.length} dates from ${dates[0]} to ${dates[dates.length-1]}`)
+    console.log(`Generated ${dates.length} dates from ${dates[0]} to ${dates[dates.length - 1]}`)
   } else {
     console.warn('No dates were generated!')
   }
-  
+
   return dates
 }
 
@@ -707,14 +695,11 @@ const formatDate = (dateStr) => {
     const year = parseInt(parts[0]);
     const month = parseInt(parts[1]) - 1;
     const day = parseInt(parts[2]);
-    
+
     // Create a date object at noon to avoid timezone issues
     date = new Date(year, month, day, 12, 0, 0);
   }
-  
-  // Log detailed debug info to track issues
-  console.log(`Formatting date: ${dateStr} → ${date.toISOString()} → ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
-  
+
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -743,7 +728,7 @@ const updateDailyChart = () => {
     console.error('Failed to get daily chart canvas context');
     return;
   }
-  
+
   dailyChartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -815,7 +800,7 @@ const updateWeeklyChart = () => {
     console.error('Failed to get weekly chart canvas context');
     return;
   }
-  
+
   weeklyChartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -849,13 +834,13 @@ const updateWeeklyChart = () => {
       plugins: {
         tooltip: {
           callbacks: {
-            title: function (tooltipItems) { 
+            title: function (tooltipItems) {
               const index = tooltipItems[0].dataIndex;
               const week = weeklyHours.value[index];
               // Show week number and date range
               return `Week ${week.weekNumber}`;
             },
-            label: function (context) { 
+            label: function (context) {
               const week = weeklyHours.value[context.dataIndex];
               return [
                 `${context.formattedValue} hours`,
@@ -880,7 +865,7 @@ let manualDateInput = false
 watch([startDate, endDate], () => {
   if (startDate.value && endDate.value) {
     error.value = null
-    
+
     // Only reset the preset if the change came from manual input
     if (manualDateInput) {
       selectedPreset.value = ''
@@ -924,11 +909,11 @@ const updateHeatChart = () => {
     console.error('Failed to get heat chart canvas context');
     return;
   }
-  
+
   // Extract simple arrays of data and labels
   const labels = [];
   const data = [];
-  
+
   // Process the time heat data
   for (let i = 0; i < timeHeatData.value.length; i++) {
     const item = timeHeatData.value[i];
@@ -937,12 +922,12 @@ const updateHeatChart = () => {
       data.push(item.count);
     }
   }
-  
+
   console.log(`Processed ${data.length} data points for heat chart`);
-  
+
   // Find maximum value for scaling
   const maxCount = Math.max(...data, 1);
-  
+
   // Create chart with consistent vertical gradients
   heatChartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -952,15 +937,15 @@ const updateHeatChart = () => {
         label: 'Activity',
         data: data,
         // Use a single gradient for all bars
-        backgroundColor: function(context) {
+        backgroundColor: function (context) {
           const chart = context.chart;
-          const {ctx, chartArea} = chart;
-          
+          const { ctx, chartArea } = chart;
+
           if (!chartArea) {
             // This can happen when charts are not yet rendered
             return 'rgba(139, 0, 0, 0.9)'; // Dark red as fallback
           }
-          
+
           // Create a flame-like gradient from black to red to orange to yellow
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');       // Black at bottom
@@ -968,7 +953,7 @@ const updateHeatChart = () => {
           gradient.addColorStop(0.6, 'rgba(255, 0, 0, 0.9)');   // Bright red
           gradient.addColorStop(0.8, 'rgba(255, 165, 0, 0.9)'); // Orange
           gradient.addColorStop(1, 'rgba(255, 255, 0, 0.9)');   // Yellow at top
-          
+
           return gradient;
         },
         borderWidth: 0,
@@ -999,7 +984,7 @@ const updateHeatChart = () => {
             maxRotation: 0,
             autoSkip: true,
             maxTicksLimit: 24, // Show hour labels only
-            callback: function(value, index) {
+            callback: function (value, index) {
               // Show only hour marks (every 12 intervals = 1 hour)
               if (index % 12 === 0) {
                 try {
@@ -1027,11 +1012,11 @@ const updateHeatChart = () => {
           enabled: true,
           displayColors: false, // Clean up tooltip appearance
           callbacks: {
-            title: function(tooltipItems) {
+            title: function (tooltipItems) {
               // Simple title showing the time
               return `Time: ${tooltipItems[0].label || 'Unknown'}`;
             },
-            label: function(context) {
+            label: function (context) {
               // Simple label showing the count
               return `${context.raw || 0} days with activity`;
             }
@@ -1040,26 +1025,22 @@ const updateHeatChart = () => {
       }
     }
   });
-  
-  console.log('Simplified heat chart created successfully');
+
 };
 
 // Clean up charts when component is unmounted
 onUnmounted(() => {
   if (dailyChartInstance.value) {
-    console.log('Cleaning up daily chart instance on unmount')
     dailyChartInstance.value.destroy()
     dailyChartInstance.value = null
   }
-  
+
   if (weeklyChartInstance.value) {
-    console.log('Cleaning up weekly chart instance on unmount')
     weeklyChartInstance.value.destroy()
     weeklyChartInstance.value = null
   }
-  
+
   if (heatChartInstance.value) {
-    console.log('Cleaning up heat chart instance on unmount')
     heatChartInstance.value.destroy()
     heatChartInstance.value = null
   }

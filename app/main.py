@@ -20,12 +20,22 @@ app = FastAPI(title="TimeTrkr")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "*"],  # Add Vite dev server origins
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "*",
+    ],  # Add Vite dev server origins
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
     expose_headers=["Content-Length"],
-    max_age=600  # Cache preflight requests for 10 minutes
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 
 # Mount static directories
@@ -34,7 +44,11 @@ if os.path.exists(STATIC_DIR):
 
 # Mount built Vue app if it exists
 if os.path.exists(DIST_DIR):
-    app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(DIST_DIR, "assets")),
+        name="assets",
+    )
 
 
 @app.post("/token", response_model=schemas.Token)
@@ -84,16 +98,12 @@ def read_time_entries(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    print(f"Getting time entries for user {current_user.id}, date filter: {entry_date}, month filter: {month_filter}")
-    entries = crud.get_time_entries(
-        db=db, 
-        user_id=current_user.id, 
-        entry_date=entry_date,
-        month_filter=month_filter
+    print(
+        f"Getting time entries for user {current_user.id}, date filter: {entry_date}, month filter: {month_filter}"
     )
-    print(f"Found {len(entries)} entries")
-    for entry in entries:
-        print(f"Entry: id={entry.id}, date={entry.date}, start={entry.start_time}, end={entry.end_time}")
+    entries = crud.get_time_entries(
+        db=db, user_id=current_user.id, entry_date=entry_date, month_filter=month_filter
+    )
     return entries
 
 
@@ -140,21 +150,19 @@ def get_time_summary(
     Get a summary of time entries within a date range.
     Returns total minutes, entry count, and days with entries.
     """
-    print(f"Getting time summary for user {current_user.id}, date range: {start_date} to {end_date}")
-    
+    print(
+        f"Getting time summary for user {current_user.id}, date range: {start_date} to {end_date}"
+    )
+
     if start_date > end_date:
         raise HTTPException(
-            status_code=400, 
-            detail="Start date cannot be after end date"
+            status_code=400, detail="Start date cannot be after end date"
         )
-    
+
     summary = crud.get_time_summary(
-        db=db, 
-        user_id=current_user.id, 
-        start_date=start_date, 
-        end_date=end_date
+        db=db, user_id=current_user.id, start_date=start_date, end_date=end_date
     )
-    
+
     print(f"Time summary results: {summary}")
     return summary
 
@@ -171,11 +179,11 @@ async def serve_frontend_app(full_path: str):
         index_path = os.path.join(DIST_DIR, "index.html")
         if os.path.exists(index_path):
             return FileResponse(index_path)
-    
+
     # Fall back to the original static directory
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    
+
     # If neither exists, return an error
     raise HTTPException(status_code=500, detail="Frontend app not found")
