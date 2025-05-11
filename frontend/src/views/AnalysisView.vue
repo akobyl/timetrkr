@@ -96,17 +96,11 @@
                 <input type="date" class="form-control" v-model="endDate" :min="startDate" @change="manualDateInput = true">
               </div>
             </div>
-            <div class="col-12 mt-2">
-              <button class="btn btn-primary w-100" @click="fetchTimeData" :disabled="isLoading">
-                <span v-if="isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                Apply
-              </button>
-            </div>
           </div>
         </div>
         
-        <!-- Mobile apply button for presets -->
-        <div class="d-block d-lg-none mt-2" v-show="selectedPreset && selectedPreset !== ''">
+        <!-- Single mobile apply button for both presets and custom dates -->
+        <div class="d-block d-lg-none mt-2">
           <button class="btn btn-primary w-100" @click="fetchTimeData" :disabled="isLoading">
             <span v-if="isLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
             Apply
