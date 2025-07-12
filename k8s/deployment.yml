@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timetrkr
+  labels:
+    app: timetrkr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timetrkr
+  template:
+    metadata:
+      labels:
+        app: timetrkr
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: timetrkr
+        image: ghcr.io/your-username/timetrkr:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: DATABASE_URL
+          value: "sqlite:///app/db/timetrkr.db"
+        volumeMounts:
+        - name: database-storage
+          mountPath: /app/db
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /docs
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: database-storage
+        persistentVolumeClaim:
+          claimName: timetrkr-db-pvc
+      restartPolicy: Always

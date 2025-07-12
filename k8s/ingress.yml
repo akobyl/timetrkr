@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: timetrkr-ingress
+  labels:
+    app: timetrkr
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Enable these for production with SSL:
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  # Enable for SSL in production:
+  # tls:
+  # - hosts:
+  #   - timetrkr.yourdomain.com
+  #   secretName: timetrkr-tls
+  rules:
+  - host: timetrkr.local  # Change this to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: timetrkr-service
+            port:
+              number: 80

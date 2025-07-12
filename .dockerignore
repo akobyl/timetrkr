@@ -1,0 +1,66 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+ARCHITECTURE.md
+*.md
+
+# Development files
+.vscode
+.idea
+*.log
+
+# Python cache and virtual environments
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+pip-log.txt
+
+# Node.js dependencies and build artifacts
+frontend/node_modules/
+frontend/dist/
+node_modules/
+npm-debug.log*
+
+# Database files (will be mounted as volume)
+db/*.db
+db/*.db-*
+
+# Static build output (will be built in container)
+static/dist/
+
+# Development scripts
+start-dev.sh
+dev-setup.sh
+
+# Test files
+tests/
+pytest.ini
+.pytest_cache
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.*.local
