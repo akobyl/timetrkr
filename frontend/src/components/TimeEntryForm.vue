@@ -17,30 +17,30 @@
             <label class="form-label">Start Time</label>
             <div class="time-picker">
               <div class="btn-group me-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('start', -15)">-15m</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('start', -5)">-5m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="10" @click="timeEntriesStore.adjustTime('start', -15)">-15m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="11" @click="timeEntriesStore.adjustTime('start', -5)">-5m</button>
               </div>
-              <input type="time" class="form-control time-display" v-model="timeEntriesStore.currentEntry.startTime" required>
+              <input type="time" class="form-control time-display" tabindex="1" v-model="timeEntriesStore.currentEntry.startTime" required>
               <div class="btn-group ms-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('start', 5)">+5m</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('start', 15)">+15m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="12" @click="timeEntriesStore.adjustTime('start', 5)">+5m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="13" @click="timeEntriesStore.adjustTime('start', 15)">+15m</button>
               </div>
-              <button type="button" class="btn btn-outline-primary ms-2" @click="timeEntriesStore.setTimeToNow('start')">Now</button>
+              <button type="button" class="btn btn-outline-primary ms-2" tabindex="14" @click="timeEntriesStore.setTimeToNow('start')">Now</button>
             </div>
           </div>
           <div class="col-md-6">
             <label class="form-label">End Time</label>
             <div class="time-picker">
               <div class="btn-group me-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('end', -15)">-15m</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('end', -5)">-5m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="20" @click="timeEntriesStore.adjustTime('end', -15)">-15m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="21" @click="timeEntriesStore.adjustTime('end', -5)">-5m</button>
               </div>
-              <input type="time" class="form-control time-display" v-model="timeEntriesStore.currentEntry.endTime" required>
+              <input type="time" class="form-control time-display" tabindex="2" v-model="timeEntriesStore.currentEntry.endTime" required>
               <div class="btn-group ms-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('end', 5)">+5m</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="timeEntriesStore.adjustTime('end', 15)">+15m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="22" @click="timeEntriesStore.adjustTime('end', 5)">+5m</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" tabindex="23" @click="timeEntriesStore.adjustTime('end', 15)">+15m</button>
               </div>
-              <button type="button" class="btn btn-outline-primary ms-2" @click="timeEntriesStore.setTimeToNow('end')">Now</button>
+              <button type="button" class="btn btn-outline-primary ms-2" tabindex="24" @click="timeEntriesStore.setTimeToNow('end')">Now</button>
             </div>
           </div>
         </div>
