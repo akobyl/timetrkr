@@ -206,8 +206,60 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     }
   }
   
+  // Validation functions
+  function validateTimeIncrement(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    return minutes % 5 === 0
+  }
+  
+  function validateTimeOrder(startTime, endTime) {
+    const [startHours, startMins] = startTime.split(':').map(Number)
+    const [endHours, endMins] = endTime.split(':').map(Number)
+    
+    const startMinutes = startHours * 60 + startMins
+    const endMinutes = endHours * 60 + endMins
+    
+    // Handle overnight entries (end time next day)
+    if (endMinutes <= startMinutes) {
+      // Only allow overnight if end time is reasonably early (before 6 AM)
+      return endHours < 6
+    }
+    
+    return true
+  }
+  
+  function validateEntry(entry = currentEntry.value) {
+    const errors = []
+    
+    if (!validateTimeIncrement(entry.startTime)) {
+      errors.push('Start time must be on 5-minute increments (e.g., 9:00, 9:05, 9:10)')
+    }
+    
+    if (!validateTimeIncrement(entry.endTime)) {
+      errors.push('End time must be on 5-minute increments (e.g., 9:00, 9:05, 9:10)')
+    }
+    
+    if (!validateTimeOrder(entry.startTime, entry.endTime)) {
+      errors.push('Start time must be before end time. For overnight entries, end time must be before 6:00 AM')
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
   async function saveTimeEntry() {
     try {
+      // Validate entry before sending
+      const validation = validateEntry()
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.errors.join('; ')
+        }
+      }
+      
       const payload = {
         date: currentEntry.value.date,
         start_time: currentEntry.value.startTime,
@@ -232,6 +284,19 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   
   async function updateTimeEntry(id, entryData) {
     try {
+      // Validate entry before sending
+      const validation = validateEntry({
+        startTime: entryData.start_time,
+        endTime: entryData.end_time,
+        date: entryData.date
+      })
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.errors.join('; ')
+        }
+      }
+      
       await apiService.put(`/time-entries/${id}`, entryData)
       await loadTimeEntries()
       return { success: true }
@@ -276,7 +341,10 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     // Calculate new time
     let totalMinutes = hours * 60 + mins + minutes
     if (totalMinutes < 0) totalMinutes = 0
-    if (totalMinutes >= 24 * 60) totalMinutes = 24 * 60 - 1
+    if (totalMinutes >= 24 * 60) totalMinutes = 24 * 60 - 5 // Ensure we stay on 5-min increment
+    
+    // Round to nearest 5-minute increment
+    totalMinutes = Math.round(totalMinutes / 5) * 5
     
     const newHours = Math.floor(totalMinutes / 60)
     const newMinutes = totalMinutes % 60
@@ -403,6 +471,9 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     adjustTime,
     setTimeToNow,
     toggleSortDirection,
-    sortTimeEntries
+    sortTimeEntries,
+    validateEntry,
+    validateTimeIncrement,
+    validateTimeOrder
   }
 })

@@ -45,8 +45,17 @@
           </div>
         </div>
 
+        <div v-if="!validation.isValid || errorMessage" class="alert alert-warning mb-3">
+          <div v-if="!validation.isValid">
+            <ul class="mb-0">
+              <li v-for="error in validation.errors" :key="error">{{ error }}</li>
+            </ul>
+          </div>
+          <div v-if="errorMessage">{{ errorMessage }}</div>
+        </div>
+
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">{{ isSubmitting ? 'Saving...' : 'Save Time Entry' }}</button>
+          <button type="submit" class="btn btn-primary" :disabled="isSubmitting || !validation.isValid">{{ isSubmitting ? 'Saving...' : 'Save Time Entry' }}</button>
           <button type="button" class="btn btn-outline-secondary" @click="timeEntriesStore.resetForm">Reset</button>
         </div>
       </form>
@@ -55,16 +64,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useTimeEntriesStore } from '../stores/timeEntries'
 
 const timeEntriesStore = useTimeEntriesStore()
 const isSubmitting = ref(false)
+const errorMessage = ref('')
+
+const validation = computed(() => timeEntriesStore.validateEntry())
 
 async function saveEntry() {
   try {
     isSubmitting.value = true
-    await timeEntriesStore.saveTimeEntry()
+    errorMessage.value = ''
+    
+    const result = await timeEntriesStore.saveTimeEntry()
+    if (!result.success) {
+      errorMessage.value = result.error
+    }
   } finally {
     isSubmitting.value = false
   }
