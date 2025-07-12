@@ -32,7 +32,9 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   
   // Computed values
   const getDayEntries = computed(() => {
-    return (dateStr) => weekEntries.value.filter(entry => entry.date === dateStr)
+    return (dateStr) => weekEntries.value
+      .filter(entry => entry.date === dateStr)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))
   })
   
   // Helper for date ranges
@@ -181,7 +183,15 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       totals[dateStr].count += 1
     })
     
-    dailyTotals.value = totals
+    // Sort the totals by date to ensure chronological order
+    const sortedTotals = {}
+    Object.keys(totals)
+      .sort((a, b) => a.localeCompare(b))
+      .forEach(dateStr => {
+        sortedTotals[dateStr] = totals[dateStr]
+      })
+    
+    dailyTotals.value = sortedTotals
   }
   
   // Toggle display of entries for a specific day
@@ -220,6 +230,20 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     }
   }
   
+  async function updateTimeEntry(id, entryData) {
+    try {
+      await apiService.put(`/time-entries/${id}`, entryData)
+      await loadTimeEntries()
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating time entry:', error)
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Failed to update time entry' 
+      }
+    }
+  }
+
   async function deleteTimeEntry(id) {
     try {
       await apiService.delete(`/time-entries/${id}`)
@@ -373,6 +397,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     calculateDailyTotals,
     toggleDayEntries,
     saveTimeEntry,
+    updateTimeEntry,
     deleteTimeEntry,
     resetForm,
     adjustTime,
