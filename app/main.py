@@ -91,7 +91,7 @@ def create_time_entry(
     return crud.create_time_entry(db=db, time_entry=time_entry, user_id=current_user.id)
 
 
-@app.get("/time-entries/", response_model=List[schemas.TimeEntry])
+@app.get("/time-entries/", response_model=List[schemas.TimeEntryResponse])
 def read_time_entries(
     entry_date: Optional[date] = None,
     month_filter: Optional[str] = None,
@@ -107,7 +107,7 @@ def read_time_entries(
     return entries
 
 
-@app.put("/time-entries/{time_entry_id}", response_model=schemas.TimeEntry)
+@app.put("/time-entries/{time_entry_id}", response_model=schemas.TimeEntryResponse)
 def update_time_entry(
     time_entry_id: int,
     time_entry: schemas.TimeEntryCreate,

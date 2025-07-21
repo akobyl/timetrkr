@@ -48,12 +48,24 @@ class TimeEntryCreate(TimeEntryBase):
     pass
 
 
+class TimeEntryResponse(BaseModel):
+    """Schema for reading time entries - no validation applied"""
+    id: int
+    date: date
+    start_time: time
+    end_time: time
+    user_id: int
+
+    class Config:
+        from_attributes = True
+
+
 class TimeEntry(TimeEntryBase):
     id: int
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserBase(BaseModel):
@@ -66,10 +78,10 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-    time_entries: List[TimeEntry] = []
+    time_entries: List[TimeEntryResponse] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Token(BaseModel):
