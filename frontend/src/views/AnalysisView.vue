@@ -162,7 +162,7 @@
             <h4>Summary</h4>
             <div class="row">
               <div class="col-md-3">
-                <div class="card bg-light">
+                <div class="card summary-card">
                   <div class="card-body text-center">
                     <h5 class="card-title">Total Hours</h5>
                     <p class="card-text display-6">{{ totalHours.toFixed(1) }}</p>
@@ -170,7 +170,7 @@
                 </div>
               </div>
               <div class="col-md-3">
-                <div class="card bg-light">
+                <div class="card summary-card">
                   <div class="card-body text-center">
                     <h5 class="card-title">Average Daily</h5>
                     <p class="card-text display-6">{{ avgHoursPerDay.toFixed(1) }}</p>
@@ -178,7 +178,7 @@
                 </div>
               </div>
               <div class="col-md-3">
-                <div class="card bg-light">
+                <div class="card summary-card">
                   <div class="card-body text-center">
                     <h5 class="card-title">Days Tracked</h5>
                     <p class="card-text display-6">{{ daysWithEntries }}</p>
@@ -186,7 +186,7 @@
                 </div>
               </div>
               <div class="col-md-3">
-                <div class="card bg-light">
+                <div class="card summary-card">
                   <div class="card-body text-center">
                     <h5 class="card-title">Max Hours</h5>
                     <p class="card-text display-6">{{ maxHours.toFixed(1) }}</p>
@@ -1230,5 +1230,11 @@ onUnmounted(() => {
   .card-header h3 {
     font-size: 1.5rem;
   }
+}
+
+.summary-card {
+  background-color: var(--custom-card-header-bg) !important;
+  border-color: var(--custom-card-border) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 </style>

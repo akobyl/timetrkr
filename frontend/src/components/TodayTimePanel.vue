@@ -2,7 +2,7 @@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h3>Today's Time</h3>
-      <div v-if="timeEntriesStore.todaySummary" class="bg-light p-2 rounded">
+      <div v-if="timeEntriesStore.todaySummary" class="summary-chip p-2 rounded">
         <strong>Total: {{ formatUtils.formatMinutes(timeEntriesStore.todaySummary.total_minutes) }}</strong>
       </div>
     </div>
@@ -54,3 +54,11 @@ function confirmDelete(id) {
   }
 }
 </script>
+
+<style scoped>
+.summary-chip {
+  background-color: var(--custom-card-header-bg);
+  border: 1px solid var(--custom-card-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+</style>

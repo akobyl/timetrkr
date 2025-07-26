@@ -2,7 +2,7 @@
   <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h3>This Week's Time</h3>
-      <div v-if="timeEntriesStore.weekSummary" class="bg-light p-2 rounded">
+      <div v-if="timeEntriesStore.weekSummary" class="summary-chip p-2 rounded">
         <strong>Total: {{ formatUtils.formatMinutes(timeEntriesStore.weekSummary.total_minutes) }}</strong>
         <div class="d-flex align-items-center mt-1">
           <span class="badge bg-primary me-1">{{ formatUtils.formatDate(timeEntriesStore.weekSummary.start_date) }}</span>
@@ -42,7 +42,7 @@
                 </tr>
                 <tr v-if="timeEntriesStore.expandedDays.includes(dateStr)">
                   <td colspan="3" class="p-0">
-                    <div class="px-4 py-2 bg-light">
+                    <div class="px-4 py-2 entry-details">
                       <table class="table table-sm mb-0">
                         <thead>
                           <tr>
@@ -81,5 +81,16 @@ const timeEntriesStore = useTimeEntriesStore()
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
+}
+
+.summary-chip {
+  background-color: var(--custom-card-header-bg);
+  border: 1px solid var(--custom-card-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.entry-details {
+  background-color: var(--custom-card-header-bg);
+  transition: background-color 0.3s ease;
 }
 </style>

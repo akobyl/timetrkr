@@ -68,7 +68,7 @@
         <!-- Entries table -->
         <div v-else class="table-responsive">
           <table class="table table-striped table-hover mb-0">
-            <thead class="table-light">
+            <thead class="table-header">
               <tr>
                 <th>Date</th>
                 <th>Start Time</th>
@@ -106,7 +106,7 @@
           </table>
         </div>
       </div>
-      <div class="card-footer d-flex justify-content-between bg-light" v-if="timeEntriesStore.allEntries.length > 0">
+      <div class="card-footer-custom d-flex justify-content-between" v-if="timeEntriesStore.allEntries.length > 0">
         <div>
           <strong>{{ timeEntriesStore.allEntries.length }}</strong> entries
         </div>
@@ -236,5 +236,18 @@ watch(() => timeEntriesStore.sortDirection, () => {
 .history-view .card {
   border-radius: 10px;
   overflow: hidden;
+}
+
+.table-header {
+  background-color: var(--custom-card-header-bg) !important;
+  border-color: var(--custom-card-border) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.card-footer-custom {
+  background-color: var(--custom-card-header-bg) !important;
+  border-top: 1px solid var(--custom-card-border) !important;
+  padding: 0.75rem 1.25rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 </style>

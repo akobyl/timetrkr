@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+  <nav class="navbar navbar-expand-lg mb-4" :class="themeStore.isDarkMode ? 'navbar-dark bg-dark' : 'navbar-light bg-light'">
     <div class="container">
       <router-link class="navbar-brand" to="/">TimeTrkr</router-link>
       <button 
@@ -36,9 +36,18 @@
             </router-link>
           </li>
         </ul>
-        <button class="btn btn-outline-danger" @click="logout">
-          <i class="bi bi-box-arrow-right me-1"></i> Logout
-        </button>
+        <div class="d-flex gap-2">
+          <button 
+            class="btn btn-outline-secondary" 
+            @click="themeStore.toggleTheme"
+            :title="themeStore.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+          >
+            <i :class="themeStore.isDarkMode ? 'bi bi-sun' : 'bi bi-moon'"></i>
+          </button>
+          <button class="btn btn-outline-danger" @click="logout">
+            <i class="bi bi-box-arrow-right me-1"></i> Logout
+          </button>
+        </div>
       </div>
     </div>
   </nav>
@@ -46,9 +55,11 @@
 
 <script setup>
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const router = useRouter()
 
 function logout() {
