@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { formatMinutes, calculateDurationMinutes } from '../utils/timeUtils'
 
 // Determine if we're in production or development based on environment or URL
 const isProd = window.location.port === '8000' || window.location.port === '80' || window.location.port === '443' || window.location.port === '';
@@ -95,22 +96,11 @@ const formatUtils = {
     return timeStr;
   },
   
-  formatMinutes(totalMinutes) {
-    const hours = Math.floor(totalMinutes / 60)
-    const mins = totalMinutes % 60
-    return `${hours}h ${mins}m`
-  },
+  formatMinutes,
   
   calculateDuration(startTime, endTime) {
-    const [startHours, startMins] = startTime.split(':').map(Number)
-    const [endHours, endMins] = endTime.split(':').map(Number)
-    
-    let durationMinutes = (endHours * 60 + endMins) - (startHours * 60 + startMins)
-    if (durationMinutes < 0) durationMinutes += 24 * 60 // Handle overnight
-    
-    const hours = Math.floor(durationMinutes / 60)
-    const mins = durationMinutes % 60
-    return `${hours}h ${mins}m`
+    const durationMinutes = calculateDurationMinutes(startTime, endTime)
+    return formatMinutes(durationMinutes)
   }
 }
 

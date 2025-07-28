@@ -82,8 +82,6 @@ def get_time_summary(db: Session, user_id: int, start_date: date, end_date: date
     Calculate a summary of time entries for a user within a specified date range.
     Returns total minutes worked, count of entries, and count of unique days with entries.
     """
-    print(f"CRUD: Getting time summary for dates {start_date} to {end_date}")
-    
     # Get all entries in the date range
     entries = (
         db.query(models.TimeEntry)
@@ -94,10 +92,6 @@ def get_time_summary(db: Session, user_id: int, start_date: date, end_date: date
         )
         .all()
     )
-    
-    print(f"CRUD: Found {len(entries)} entries in date range")
-    for entry in entries:
-        print(f"CRUD: Entry in summary: id={entry.id}, date={entry.date}, start={entry.start_time}, end={entry.end_time}")
     
     if not entries:
         return {
