@@ -1,73 +1,204 @@
-# TimeTrkr ��
+# TimeTrkr
 
-> "Time you enjoy wasting is not wasted time."  Marthe Troly-Curtin
+A modern, lightweight time tracking application designed for freelancers, remote workers, and teams who need accurate time management without complexity.
 
-## Welcome to the Vibe Coded Time Tracking Revolution! �
+## Overview
 
-TimeTrkr is a lightweight, easy-to-use time tracking app built on positive energy, good vibes, and occasionally questionable late-night coding sessions. Perfect for freelancers, remote workers, or anyone who keeps saying "I'll just track my hours later" (we know you won't).
+TimeTrkr provides a clean, intuitive interface for tracking work hours with features designed around real-world usage patterns. Built with modern web technologies, it offers both simplicity for basic time tracking and depth for detailed analysis.
 
-## � Features That Spark Joy
+## Features
 
-- **Dashboard**: See your daily and weekly time entries at a glance
-- **Analysis**: In-depth time tracking analytics (coming soon)
-- **History**: Review your complete time tracking history with sorting and filtering
-- **Profile**: Manage your personal settings (coming soon)
-- **Time Selectors with Increments**: Easily adjust time with +/- 5 or 15 minute buttons because who actually starts work exactly at 9:00 AM?
-- **Persistent Login**: We remember you for 7 days because life's too short for constant logins
-- **Auto-refresh**: Your entries update automatically - one less button to click!
+### Core Functionality
+- **Dashboard**: Real-time overview of daily and weekly time entries
+- **Time Entry Management**: Create, edit, and delete time entries with validation
+- **Historical Data**: Comprehensive history view with filtering and sorting capabilities
+- **Analytics**: Time tracking insights and productivity metrics
+- **User Management**: Secure authentication and profile management
 
-## Tech Stack
+### User Experience
+- **Smart Time Controls**: Increment/decrement buttons for 5 and 15-minute adjustments
+- **Current Time Integration**: "Now" button sets current time rounded to nearest 5 minutes
+- **Persistent Sessions**: 7-day authentication persistence for seamless usage
+- **Responsive Design**: Optimized for desktop and mobile devices
+- **Dark Mode Support**: Theme switching for comfortable usage
 
-- **Frontend**: Vue.js 3, Vue Router, Pinia, Bootstrap 5, Axios
-- **Backend**: FastAPI, SQLAlchemy, SQLite
-- **Build Tools**: Vite
-- **Secret Ingredients**: Enthusiasm, multiple debugging sessions, and copious amounts of caffeine
+### Data Management
+- **Automatic Validation**: Time entries validated for logical consistency
+- **Overnight Tracking**: Support for entries spanning midnight
+- **Export Capabilities**: CSV export functionality for external analysis
+- **Real-time Updates**: Automatic refresh and synchronization
 
-## Getting Started
+## Technical Architecture
 
-### Development Mode
+### Frontend
+- **Framework**: Vue.js 3 with Composition API
+- **State Management**: Pinia stores with modular architecture
+- **Routing**: Vue Router with authentication guards
+- **Styling**: Bootstrap 5 with custom CSS variables
+- **Build Tool**: Vite for fast development and optimized builds
+- **HTTP Client**: Axios with request/response interceptors
 
-1. Clone this repository
-2. Install backend dependencies: `pip install -r requirements.txt`
-3. Install frontend dependencies: `cd frontend && npm install`
-4. Run both backend and frontend: `./start-dev.sh`
-5. Access the app at `http://localhost:5173`
+### Backend
+- **Framework**: FastAPI with automatic API documentation
+- **Database**: SQLAlchemy ORM with SQLite database
+- **Authentication**: JWT-based authentication system
+- **Validation**: Pydantic schemas for request/response validation
+- **Architecture**: Service layer pattern with separated concerns
+- **API Design**: RESTful endpoints with consistent error handling
 
-### Production Build
+### Development Tools
+- **Package Management**: UV for Python dependencies
+- **Testing**: Pytest for backend testing
+- **Code Quality**: Structured with linting and validation
+- **Deployment**: Docker support with Kubernetes manifests
 
-1. Clone this repository
-2. Install dependencies: `pip install -r requirements.txt && cd frontend && npm install`
-3. Build the frontend: `./build.sh`
-4. Run the server: `python -m uvicorn app.main:app`
-5. Access the app at `http://localhost:8000`
+## Installation
 
-## Usage Insights
+### Prerequisites
+- Python 3.12+
+- Node.js 18+
+- UV package manager (recommended) or pip
 
-- The "Now" button is your friend - it sets the current time (rounded to the nearest 5 min)
-- Daily totals in the Week view help you understand your productivity patterns
-- Expandable entries make it easy to see details for specific days
-- Coming soon: Analysis tools to visualize your time usage trends
+### Development Setup
 
-## � Philosophy
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd timetrkr
+   ```
 
-TimeTrkr was built not just with code, but with vibes. Every feature request was met with "yeah, we can totally do that!" Energy flows where attention goes, and we put our attention into making time tracking suck less.
+2. **Backend setup**
+   ```bash
+   # Using UV (recommended)
+   uv sync
+   
+   # Or using pip
+   pip install -e .
+   ```
 
-No elaborate planning documents or complex requirement specs - just collaborative, iterative development guided by what felt right. We call it "vibe coding" - where intuition meets implementation.
+3. **Frontend setup**
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-Now with the power of modern Vue.js components, we've elevated the vibe to new heights - making the codebase as organized as your time will be.
+4. **Database initialization**
+   ```bash
+   # Database migrations are handled automatically on first run
+   ```
 
-## Why TimeTrkr?
+### Running the Application
 
-Because spreadsheets are boring, expensive time trackers are annoying, and writing hours on sticky notes is just asking for trouble.
+#### Development Mode
+```bash
+# Start both frontend and backend
+./start-dev.sh
 
-## Disclaimer
+# Or start individually:
+# Backend: uv run uvicorn app.main:app --reload
+# Frontend: cd frontend && npm run dev
+```
 
-TimeTrkr may cause unexpected productivity insights, reduced end-of-month billing panic, and occasional moments of "wow, I spent THAT much time on meetings?"
+#### Production Build
+```bash
+# Build frontend assets
+./build.sh
+
+# Run production server
+./run-prod.sh
+```
+
+The application will be available at:
+- Development: `http://localhost:5173` (frontend) + `http://localhost:8000` (API)
+- Production: `http://localhost:8000`
+
+## Usage
+
+### Getting Started
+1. Create a user account through the registration interface
+2. Log in to access the time tracking dashboard
+3. Create your first time entry using the entry form
+4. View daily and weekly summaries in the dashboard
+5. Access detailed history and analytics through the navigation menu
+
+### Time Entry Management
+- **Creating Entries**: Use the dashboard form with date, start time, and end time
+- **Time Validation**: All times are automatically rounded to 5-minute increments
+- **Editing**: Click any entry to modify details inline
+- **Overnight Entries**: Supported for entries ending before 6:00 AM the next day
+
+### Data Analysis
+- **Daily Summaries**: Automatic calculation of daily totals
+- **Weekly Views**: Monday-Sunday week summaries with expandable daily details
+- **Historical Analysis**: Filter and sort entries by date ranges
+- **Export Options**: CSV export for external analysis tools
+
+## API Documentation
+
+When running the application, interactive API documentation is available at:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+### Key Endpoints
+- `POST /token` - Authentication
+- `GET /users/me` - Current user profile
+- `GET /time-entries/` - List time entries (with optional filtering)
+- `POST /time-entries/` - Create new time entry
+- `PUT /time-entries/{id}` - Update existing entry
+- `DELETE /time-entries/{id}` - Delete entry
+- `GET /time-summary/` - Time summary for date range
+
+## Deployment
+
+### Docker Deployment
+```bash
+docker build -t timetrkr .
+docker run -p 8000:8000 timetrkr
+```
+
+### Kubernetes Deployment
+```bash
+kubectl apply -f k8s/
+```
+
+## Testing
+
+### Backend Tests
+```bash
+uv run pytest -v
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm run test
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
+5. Create a Pull Request
+
+### Development Guidelines
+- Follow the existing code style and architecture patterns
+- Write tests for new functionality
+- Update documentation for API changes
+- Ensure all tests pass before submitting PRs
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For issues, feature requests, or questions:
+- Create an issue in the repository
+- Check existing documentation and API references
+- Review the development setup guide for common problems
 
 ---
 
-Built with love and vibes
-
-## Current Claude Code Cost Count
-
-$24.07
+**TimeTrkr** - Professional time tracking made simple.
