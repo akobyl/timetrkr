@@ -18,6 +18,12 @@
             <label for="lastEndTime" class="form-label">End Time</label>
             <div class="input-group">
               <input type="time" class="form-control" id="lastEndTime" v-model="editEntry.end_time" required>
+              <button type="button" class="btn btn-outline-success btn-sm" @click="addMinutes(5)" title="Add 5 minutes">
+                +5
+              </button>
+              <button type="button" class="btn btn-outline-success btn-sm" @click="addMinutes(15)" title="Add 15 minutes">
+                +15
+              </button>
               <button type="button" class="btn btn-outline-secondary" @click="setEndTimeToNow" title="Set to current time">
                 Now
               </button>
@@ -161,6 +167,19 @@ function roundTimeToFiveMinutes() {
 
 function setEndTimeToNow() {
   editEntry.value.end_time = roundTimeToFiveMinutes()
+}
+
+function addMinutes(minutes) {
+  if (!editEntry.value.end_time) return
+  
+  const [hours, mins] = editEntry.value.end_time.split(':').map(Number)
+  const date = new Date()
+  date.setHours(hours, mins + minutes, 0, 0)
+  
+  const newHours = date.getHours().toString().padStart(2, '0')
+  const newMinutes = date.getMinutes().toString().padStart(2, '0')
+  
+  editEntry.value.end_time = `${newHours}:${newMinutes}`
 }
 </script>
 
