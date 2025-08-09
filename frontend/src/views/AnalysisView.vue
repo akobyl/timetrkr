@@ -18,10 +18,10 @@
 
             <div class="dropdown date-preset-dropdown me-3">
                <button
+                ref="desktopDropdownRef"
                 class="btn btn-outline-primary dropdown-toggle"
                 type="button"
-                id="datePresetDropdown"
-                data-bs-toggle="dropdown"
+                @click="toggleDropdown('desktop')"
                 aria-expanded="false"
               >
                  {{
@@ -30,7 +30,7 @@
                     : 'Select Range'
                 }} </button
               >
-              <ul class="dropdown-menu" aria-labelledby="datePresetDropdown">
+              <ul class="dropdown-menu">
                  <!-- Week-based options -->
                 <li><h6 class="dropdown-header">Weeks</h6></li>
 
@@ -38,7 +38,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('current_week')"
+@click.prevent="selectPreset('current_week'); closeDropdown('desktop')"
                     >Current Week</a
                   >
                 </li>
@@ -47,7 +47,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('last_week')"
+@click.prevent="selectPreset('last_week'); closeDropdown('desktop')"
                     >Last Week</a
                   >
                 </li>
@@ -56,7 +56,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('last_2_weeks')"
+@click.prevent="selectPreset('last_2_weeks'); closeDropdown('desktop')"
                     >Last 2 Weeks</a
                   >
                 </li>
@@ -65,7 +65,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('last_4_weeks')"
+@click.prevent="selectPreset('last_4_weeks'); closeDropdown('desktop')"
                     >Last 4 Weeks</a
                   >
                 </li>
@@ -78,7 +78,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('current_month')"
+@click.prevent="selectPreset('current_month'); closeDropdown('desktop')"
                     >Current Month</a
                   >
                 </li>
@@ -87,7 +87,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('last_month')"
+@click.prevent="selectPreset('last_month'); closeDropdown('desktop')"
                     >Last Month</a
                   >
                 </li>
@@ -96,7 +96,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('last_3_months')"
+@click.prevent="selectPreset('last_3_months'); closeDropdown('desktop')"
                     >Last 3 Months</a
                   >
                 </li>
@@ -105,7 +105,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('last_6_months')"
+@click.prevent="selectPreset('last_6_months'); closeDropdown('desktop')"
                     >Last 6 Months</a
                   >
                 </li>
@@ -114,7 +114,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectPreset('this_year')"
+@click.prevent="selectPreset('this_year'); closeDropdown('desktop')"
                     >This Year</a
                   >
                 </li>
@@ -125,7 +125,7 @@
                    <a
                     class="dropdown-item"
                     href="#"
-                    @click.prevent="selectedPreset = ''"
+@click.prevent="selectedPreset = ''; closeDropdown('desktop')"
                     >Custom Range</a
                   >
                 </li>
@@ -177,10 +177,10 @@
            <!-- Mobile layout -->
           <div class="d-block d-lg-none date-preset-group">
              <button
+              ref="mobileDropdownRef"
               class="btn btn-outline-primary dropdown-toggle"
               type="button"
-              id="mobilePresetDropdown"
-              data-bs-toggle="dropdown"
+              @click="toggleDropdown('mobile')"
               aria-expanded="false"
             >
                {{
@@ -189,7 +189,7 @@
                   : 'Select Range'
               }} </button
             >
-            <ul class="dropdown-menu" aria-labelledby="mobilePresetDropdown">
+            <ul class="dropdown-menu">
                <!-- Week-based options -->
               <li><h6 class="dropdown-header">Weeks</h6></li>
 
@@ -197,7 +197,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('current_week')"
+@click.prevent="selectPreset('current_week'); closeDropdown('mobile')"
                   >Current Week</a
                 >
               </li>
@@ -206,7 +206,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('last_week')"
+@click.prevent="selectPreset('last_week'); closeDropdown('mobile')"
                   >Last Week</a
                 >
               </li>
@@ -215,7 +215,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('last_2_weeks')"
+@click.prevent="selectPreset('last_2_weeks'); closeDropdown('mobile')"
                   >Last 2 Weeks</a
                 >
               </li>
@@ -224,7 +224,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('last_4_weeks')"
+@click.prevent="selectPreset('last_4_weeks'); closeDropdown('mobile')"
                   >Last 4 Weeks</a
                 >
               </li>
@@ -237,7 +237,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('current_month')"
+@click.prevent="selectPreset('current_month'); closeDropdown('mobile')"
                   >Current Month</a
                 >
               </li>
@@ -246,7 +246,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('last_month')"
+@click.prevent="selectPreset('last_month'); closeDropdown('mobile')"
                   >Last Month</a
                 >
               </li>
@@ -255,7 +255,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('last_3_months')"
+@click.prevent="selectPreset('last_3_months'); closeDropdown('mobile')"
                   >Last 3 Months</a
                 >
               </li>
@@ -264,7 +264,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('last_6_months')"
+@click.prevent="selectPreset('last_6_months'); closeDropdown('mobile')"
                   >Last 6 Months</a
                 >
               </li>
@@ -273,7 +273,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectPreset('this_year')"
+@click.prevent="selectPreset('this_year'); closeDropdown('mobile')"
                   >This Year</a
                 >
               </li>
@@ -284,7 +284,7 @@
                  <a
                   class="dropdown-item"
                   href="#"
-                  @click.prevent="selectedPreset = ''"
+@click.prevent="selectedPreset = ''; closeDropdown('mobile')"
                   >Custom Range</a
                 >
               </li>
@@ -553,6 +553,40 @@ const dailyChartInstance = ref(null)
 const weeklyChartInstance = ref(null)
 const heatChartInstance = ref(null)
 
+// Dropdown refs for direct Vue control
+const desktopDropdownRef = ref(null)
+const mobileDropdownRef = ref(null)
+
+// Toggle dropdown manually
+const toggleDropdown = (dropdownType) => {
+  const dropdown =
+    dropdownType === 'desktop'
+      ? desktopDropdownRef.value
+      : mobileDropdownRef.value
+  if (dropdown) {
+    const menu = dropdown.nextElementSibling
+    if (menu && menu.classList.contains('dropdown-menu')) {
+      menu.classList.toggle('show')
+      dropdown.setAttribute('aria-expanded', menu.classList.contains('show'))
+    }
+  }
+}
+
+// Close dropdown when clicking outside or selecting item
+const closeDropdown = (dropdownType) => {
+  const dropdown =
+    dropdownType === 'desktop'
+      ? desktopDropdownRef.value
+      : mobileDropdownRef.value
+  if (dropdown) {
+    const menu = dropdown.nextElementSibling
+    if (menu && menu.classList.contains('dropdown-menu')) {
+      menu.classList.remove('show')
+      dropdown.setAttribute('aria-expanded', 'false')
+    }
+  }
+}
+
 // Setup date range (default to current week)
 const setDefaultDateRange = () => {
   // Reset manual input flag
@@ -571,7 +605,7 @@ const setDefaultDateRange = () => {
 }
 
 // Handle date presets
-const applyDatePreset = (event = null) => {
+const applyDatePreset = () => {
   // Reset manual input flag since we're applying a preset
   manualDateInput = false
 
@@ -580,14 +614,15 @@ const applyDatePreset = (event = null) => {
 
   switch (selectedPreset.value) {
     // Week-based options
-    case 'current_week':
+    case 'current_week': {
       // Current week (Sunday to Saturday)
       const thisWeek = getWeekDates(now)
       start = thisWeek.start
       end = thisWeek.end
       break
+    }
 
-    case 'last_week':
+    case 'last_week': {
       // Last week (Sunday to Saturday of previous week)
       const lastWeek = new Date(now)
       lastWeek.setDate(lastWeek.getDate() - 7)
@@ -595,8 +630,9 @@ const applyDatePreset = (event = null) => {
       start = lastWeekDates.start
       end = lastWeekDates.end
       break
+    }
 
-    case 'last_2_weeks':
+    case 'last_2_weeks': {
       // Last 2 weeks - using exact 14 days from today
       // Get the current week's Sunday
       const currentWeek2 = getWeekDates(now)
@@ -606,8 +642,9 @@ const applyDatePreset = (event = null) => {
       start = exactTwoWeeksAgo
       end = currentWeek2.end
       break
+    }
 
-    case 'last_4_weeks':
+    case 'last_4_weeks': {
       // Last 4 weeks - using exact 28 days from today
       // Get the current week's end date
       const currentWeekEnd = getWeekDates(now).end
@@ -617,37 +654,43 @@ const applyDatePreset = (event = null) => {
       start = exactFourWeeksAgo
       end = currentWeekEnd
       break
+    }
 
     // Month-based options
-    case 'current_month':
+    case 'current_month': {
       // First and last day of current month
       start = new Date(now.getFullYear(), now.getMonth(), 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
+    }
 
-    case 'last_month':
+    case 'last_month': {
       // Last month: 1st to last day of previous month
       start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       end = new Date(now.getFullYear(), now.getMonth(), 0)
       break
+    }
 
-    case 'last_3_months':
+    case 'last_3_months': {
       // Last 3 months: 1st day of month from 3 months ago to last day of current month
       start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
+    }
 
-    case 'last_6_months':
+    case 'last_6_months': {
       // Last 6 months: 1st day of month from 6 months ago to last day of current month
       start = new Date(now.getFullYear(), now.getMonth() - 5, 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
+    }
 
-    case 'this_year':
+    case 'this_year': {
       // This year: January 1st to last day of current month
       start = new Date(now.getFullYear(), 0, 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       break
+    }
 
     default:
       // Custom range - do nothing
@@ -807,7 +850,7 @@ const fetchTimeData = async () => {
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekStart.getDate() + 6)
 
-      // Create a unique key for this week
+      // Create a unique key for this week  
       const weekKey = `Week-${formatYYYYMMDD(weekStart)}`
 
       // Convert to strings for formatting properly
@@ -979,15 +1022,6 @@ const fetchTimeData = async () => {
   }
 }
 
-// Helper function to get week of month (1-5)
-const getWeekOfMonth = (date) => {
-  // Create a copy of the date
-  const d = new Date(date)
-  // Get the day of the month (1-31)
-  const day = d.getDate()
-  // Divide by 7 and round up to get the week number (1-5)
-  return Math.ceil(day / 7)
-}
 
 // Helper function to get the start date (Sunday) and end date (Saturday) of a week
 const getWeekDates = (date) => {
@@ -1402,8 +1436,8 @@ const updateHeatChart = () => {
 
   console.log(`Processed ${data.length} data points for heat chart`)
 
-  // Find maximum value for scaling
-  const maxCount = Math.max(...data, 1)
+  // Find maximum value for scaling - used for potential future scaling
+  Math.max(...data, 1)
 
   // Create chart with consistent vertical gradients
   heatChartInstance.value = new Chart(ctx, {
@@ -1542,6 +1576,9 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 150px;
+  background-color: var(--bs-body-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  color: var(--bs-body-color) !important;
 }
 
 .desktop-date-inputs {
@@ -1562,6 +1599,9 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  background-color: var(--bs-body-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  color: var(--bs-body-color) !important;
 }
 
 .date-controls-custom {
@@ -1570,7 +1610,12 @@ onUnmounted(() => {
 
 .selected-date-range {
   font-size: 0.9rem;
-  color: #6c757d;
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--bs-border-color);
+  opacity: 0.8;
 }
 
 /* Additional mobile adjustments */
