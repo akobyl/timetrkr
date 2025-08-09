@@ -2,17 +2,26 @@
   <nav class="navbar navbar-expand-lg mb-4" :class="themeStore.isDarkMode ? 'navbar-dark bg-dark' : 'navbar-light bg-light'">
     <div class="container">
       <router-link class="navbar-brand" to="/">TimeTrkr</router-link>
-      <button 
-        class="navbar-toggler" 
-        type="button" 
-        data-bs-toggle="collapse" 
-        data-bs-target="#navbarNav" 
-        aria-controls="navbarNav" 
-        aria-expanded="false" 
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      <div class="d-flex align-items-center gap-2 d-lg-none">
+        <button 
+          class="btn btn-outline-secondary" 
+          @click="themeStore.toggleTheme"
+          :title="themeStore.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+          <i :class="themeStore.isDarkMode ? 'bi bi-sun' : 'bi bi-moon'"></i>
+        </button>
+        <button 
+          class="navbar-toggler" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#navbarNav" 
+          aria-controls="navbarNav" 
+          aria-expanded="false" 
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
@@ -38,7 +47,7 @@
         </ul>
         <div class="d-flex gap-2">
           <button 
-            class="btn btn-outline-secondary" 
+            class="btn btn-outline-secondary d-none d-lg-inline-block" 
             @click="themeStore.toggleTheme"
             :title="themeStore.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
           >
