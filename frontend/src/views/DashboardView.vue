@@ -1,17 +1,17 @@
 <template>
+
   <div class="dashboard-view">
-    <TimeEntryForm />
-    <LastTimeEntryEdit />
-    
+     <TimeEntryForm /> <LastTimeEntryEdit />
     <div class="row">
-      <div class="col-md-6">
-        <TodayTimePanel />
-      </div>
-      <div class="col-md-6">
-        <WeekTimePanel />
-      </div>
+
+      <div class="col-md-6"> <TodayTimePanel /> </div>
+
+      <div class="col-md-6"> <WeekTimePanel /> </div>
+
     </div>
+
   </div>
+
 </template>
 
 <script setup>
@@ -28,3 +28,4 @@ onMounted(async () => {
   await timeEntriesStore.loadTimeEntries()
 })
 </script>
+

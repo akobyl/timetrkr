@@ -1,6 +1,5 @@
 <template>
-  <NavBar v-if="authStore.isAuthenticated" />
-  <router-view></router-view>
+   <NavBar v-if="authStore.isAuthenticated" /> <router-view></router-view>
 </template>
 
 <script setup>
@@ -71,3 +70,4 @@ body {
   padding-bottom: 2rem;
 }
 </style>
+

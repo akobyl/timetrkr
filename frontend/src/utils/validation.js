@@ -21,16 +21,16 @@ export function validateTimeIncrement(timeStr) {
 export function validateTimeOrder(startTime, endTime) {
   const [startHours, startMins] = startTime.split(':').map(Number)
   const [endHours, endMins] = endTime.split(':').map(Number)
-  
+
   const startMinutes = startHours * 60 + startMins
   const endMinutes = endHours * 60 + endMins
-  
+
   // Handle overnight entries (end time next day)
   if (endMinutes <= startMinutes) {
     // Only allow overnight if end time is reasonably early (before 6 AM)
     return endHours < 6
   }
-  
+
   return true
 }
 
@@ -41,21 +41,27 @@ export function validateTimeOrder(startTime, endTime) {
  */
 export function validateEntry(entry) {
   const errors = []
-  
+
   if (!validateTimeIncrement(entry.startTime)) {
-    errors.push('Start time must be on 5-minute increments (e.g., 9:00, 9:05, 9:10)')
+    errors.push(
+      'Start time must be on 5-minute increments (e.g., 9:00, 9:05, 9:10)'
+    )
   }
-  
+
   if (!validateTimeIncrement(entry.endTime)) {
-    errors.push('End time must be on 5-minute increments (e.g., 9:00, 9:05, 9:10)')
+    errors.push(
+      'End time must be on 5-minute increments (e.g., 9:00, 9:05, 9:10)'
+    )
   }
-  
+
   if (!validateTimeOrder(entry.startTime, entry.endTime)) {
-    errors.push('Start time must be before end time. For overnight entries, end time must be before 6:00 AM')
+    errors.push(
+      'Start time must be before end time. For overnight entries, end time must be before 6:00 AM'
+    )
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }

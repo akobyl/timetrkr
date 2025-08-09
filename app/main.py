@@ -54,6 +54,7 @@ app.include_router(auth_router.router)
 app.include_router(users.router)
 app.include_router(time_entries.router)
 
+
 # Keep time-summary endpoint in main for backward compatibility
 @app.get("/time-summary/", response_model=schemas.TimeSummary)
 def get_time_summary(
@@ -67,6 +68,7 @@ def get_time_summary(
     Returns total minutes, entry count, and days with entries.
     """
     from app.services.time_entry_service import TimeEntryService
+
     service = TimeEntryService(db)
     return service.get_time_summary(current_user.id, start_date, end_date)
 

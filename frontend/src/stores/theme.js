@@ -11,7 +11,9 @@ export const useThemeStore = defineStore('theme', () => {
       isDarkMode.value = savedTheme === 'dark'
     } else {
       // Use system preference
-      isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+      isDarkMode.value = window.matchMedia(
+        '(prefers-color-scheme: dark)'
+      ).matches
     }
     applyTheme()
   }
@@ -41,6 +43,6 @@ export const useThemeStore = defineStore('theme', () => {
   return {
     isDarkMode,
     initializeTheme,
-    toggleTheme
+    toggleTheme,
   }
 })

@@ -54,7 +54,7 @@ export function useTimeEntries() {
     resetForm: formStore.resetForm,
     adjustEntryTime: formStore.adjustEntryTime,
     setTimeToNow: formStore.setTimeToNow,
-    
+
     // Data store
     todayEntries: dataStore.todayEntries,
     weekEntries: dataStore.weekEntries,
@@ -67,16 +67,16 @@ export function useTimeEntries() {
     sortDirection: dataStore.sortDirection,
     isLoadingEntries: dataStore.isLoadingEntries,
     getDayEntries: dataStore.getDayEntries,
-    
+
     // Combined actions
     saveEntry,
     updateEntry,
     deleteEntry,
-    
+
     // Data actions
     loadTodayAndWeekEntries: dataStore.loadTodayAndWeekEntries,
     loadAllTimeEntries: dataStore.loadAllTimeEntries,
     toggleDayEntries: dataStore.toggleDayEntries,
-    toggleSortDirection: dataStore.toggleSortDirection
+    toggleSortDirection: dataStore.toggleSortDirection,
   }
 }

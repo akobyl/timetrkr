@@ -30,16 +30,18 @@ def create_time_entry(db: Session, time_entry: schemas.TimeEntryCreate, user_id:
     return db_time_entry
 
 
-def get_time_entries(db: Session, user_id: int, entry_date: date = None, month_filter: str = None):
+def get_time_entries(
+    db: Session, user_id: int, entry_date: date = None, month_filter: str = None
+):
     query = db.query(models.TimeEntry).filter(models.TimeEntry.user_id == user_id)
-    
+
     # Filter by specific date if provided
     if entry_date:
         query = query.filter(models.TimeEntry.date == entry_date)
     # If month_filter provided (in YYYY-MM format), filter by month
     elif month_filter:
         query = query.filter(models.TimeEntry.date.like(f"{month_filter}%"))
-        
+
     return query.all()
 
 
@@ -88,43 +90,43 @@ def get_time_summary(db: Session, user_id: int, start_date: date, end_date: date
         .filter(
             models.TimeEntry.user_id == user_id,
             models.TimeEntry.date >= start_date,
-            models.TimeEntry.date <= end_date
+            models.TimeEntry.date <= end_date,
         )
         .all()
     )
-    
+
     if not entries:
         return {
             "start_date": start_date,
             "end_date": end_date,
             "total_minutes": 0,
             "entries_count": 0,
-            "days_with_entries": 0
+            "days_with_entries": 0,
         }
-    
+
     # Calculate total minutes
     total_minutes = 0
     unique_days = set()
-    
+
     for entry in entries:
         # Convert start and end times to minutes
         start_minutes = entry.start_time.hour * 60 + entry.start_time.minute
         end_minutes = entry.end_time.hour * 60 + entry.end_time.minute
-        
+
         # Handle overnight entries
         if end_minutes < start_minutes:
             end_minutes += 24 * 60
-        
+
         # Add duration to total
         total_minutes += end_minutes - start_minutes
-        
+
         # Track unique days
         unique_days.add(entry.date)
-    
+
     return {
         "start_date": start_date,
         "end_date": end_date,
         "total_minutes": total_minutes,
         "entries_count": len(entries),
-        "days_with_entries": len(unique_days)
+        "days_with_entries": len(unique_days),
     }

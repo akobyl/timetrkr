@@ -30,30 +30,30 @@ export function formatLocalDate(date) {
 export function getCurrentWeekRange() {
   const today = new Date()
   const currentDay = today.getDay() // 0 = Sunday, 1 = Monday, ...
-  
+
   // Calculate days to subtract to get to Monday
   const daysToSubtract = currentDay === 0 ? 6 : currentDay - 1
-  
+
   // Create a new date object for start of week (Monday)
   const startOfWeek = new Date(today)
   startOfWeek.setDate(today.getDate() - daysToSubtract)
-  
+
   // Calculate end of week (Sunday)
   const endOfWeek = new Date(startOfWeek)
   endOfWeek.setDate(startOfWeek.getDate() + 6) // Add 6 days to Monday to get to Sunday
-  
+
   // Reset the time parts to ensure consistent comparison
   startOfWeek.setHours(0, 0, 0, 0)
   endOfWeek.setHours(23, 59, 59, 999)
-  
+
   // Format as YYYY-MM-DD strings using local date format
   const startStr = formatLocalDate(startOfWeek)
   const endStr = formatLocalDate(endOfWeek)
-  
+
   return {
     start: startStr,
     end: endStr,
     startDate: startOfWeek,
-    endDate: endOfWeek
+    endDate: endOfWeek,
   }
 }

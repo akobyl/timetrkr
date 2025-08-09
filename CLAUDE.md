@@ -364,6 +364,10 @@ rm -rf dist node_modules && npm install  # Clean reinstall
 - Keep business logic in service layers
 - Write tests for new features and bug fixes
 
+### Code Quality
+- Run formatting tools after making changes (ESLint, Prettier, or similar)
+- Run linting and type checking before committing
+
 ### Git Workflow
 - Create feature branches from main
 - Use descriptive commit messages

@@ -11,10 +11,10 @@
 export function calculateDurationMinutes(startTime, endTime) {
   const [startHours, startMins] = startTime.split(':').map(Number)
   const [endHours, endMins] = endTime.split(':').map(Number)
-  
-  let durationMinutes = (endHours * 60 + endMins) - (startHours * 60 + startMins)
+
+  let durationMinutes = endHours * 60 + endMins - (startHours * 60 + startMins)
   if (durationMinutes < 0) durationMinutes += 24 * 60 // Handle overnight
-  
+
   return durationMinutes
 }
 
@@ -38,18 +38,18 @@ export function formatMinutes(totalMinutes) {
 export function adjustTime(timeStr, minutes) {
   // Parse the time
   const [hours, mins] = timeStr.split(':').map(Number)
-  
+
   // Calculate new time
   let totalMinutes = hours * 60 + mins + minutes
   if (totalMinutes < 0) totalMinutes = 0
   if (totalMinutes >= 24 * 60) totalMinutes = 24 * 60 - 5 // Ensure we stay on 5-min increment
-  
+
   // Round to nearest 5-minute increment
   totalMinutes = Math.round(totalMinutes / 5) * 5
-  
+
   const newHours = Math.floor(totalMinutes / 60)
   const newMinutes = totalMinutes % 60
-  
+
   // Format to 24-hour format with only HH:MM (no seconds)
   return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`
 }
@@ -60,20 +60,20 @@ export function adjustTime(timeStr, minutes) {
  */
 export function getCurrentTimeRounded() {
   const now = new Date()
-  
+
   // Get local hours and minutes
   let hours = now.getHours()
   let minutes = now.getMinutes()
-  
+
   // Round to nearest 5 minutes
   minutes = Math.round(minutes / 5) * 5
-  
+
   // Adjust if minutes rolled over to 60
   if (minutes === 60) {
     minutes = 0
-    hours = (hours + 1) % 24  // Ensure we don't go past 24 hours
+    hours = (hours + 1) % 24 // Ensure we don't go past 24 hours
   }
-  
+
   // Format to 24-hour format with only HH:MM (no seconds)
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
