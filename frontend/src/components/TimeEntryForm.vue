@@ -54,6 +54,7 @@
                 class="form-control time-display"
                 tabindex="1"
                 v-model="timeEntriesStore.currentEntry.startTime"
+                @change="updateEndTime"
                 required
               />
               <div class="btn-group ms-2">
@@ -198,6 +199,23 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 
 const validation = computed(() => timeEntriesStore.validateEntry())
+
+function updateEndTime() {
+  if (timeEntriesStore.currentEntry.startTime) {
+    const [hours, minutes] = timeEntriesStore.currentEntry.startTime
+      .split(':')
+      .map(Number)
+    const startDate = new Date()
+    startDate.setHours(hours)
+    startDate.setMinutes(minutes)
+    startDate.setMinutes(startDate.getMinutes() + 5)
+
+    const newHours = String(startDate.getHours()).padStart(2, '0')
+    const newMinutes = String(startDate.getMinutes()).padStart(2, '0')
+
+    timeEntriesStore.currentEntry.endTime = `${newHours}:${newMinutes}`
+  }
+}
 
 async function saveEntry() {
   try {
