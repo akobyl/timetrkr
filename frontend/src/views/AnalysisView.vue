@@ -38,7 +38,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('current_week'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('current_week');
+                      closeDropdown('desktop')
+                    "
                     >Current Week</a
                   >
                 </li>
@@ -47,7 +50,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('last_week'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('last_week');
+                      closeDropdown('desktop')
+                    "
                     >Last Week</a
                   >
                 </li>
@@ -56,7 +62,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('last_2_weeks'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('last_2_weeks');
+                      closeDropdown('desktop')
+                    "
                     >Last 2 Weeks</a
                   >
                 </li>
@@ -65,7 +74,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('last_4_weeks'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('last_4_weeks');
+                      closeDropdown('desktop')
+                    "
                     >Last 4 Weeks</a
                   >
                 </li>
@@ -78,7 +90,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('current_month'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('current_month');
+                      closeDropdown('desktop')
+                    "
                     >Current Month</a
                   >
                 </li>
@@ -87,7 +102,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('last_month'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('last_month');
+                      closeDropdown('desktop')
+                    "
                     >Last Month</a
                   >
                 </li>
@@ -96,7 +114,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('last_3_months'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('last_3_months');
+                      closeDropdown('desktop')
+                    "
                     >Last 3 Months</a
                   >
                 </li>
@@ -105,7 +126,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('last_6_months'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('last_6_months');
+                      closeDropdown('desktop')
+                    "
                     >Last 6 Months</a
                   >
                 </li>
@@ -114,7 +138,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectPreset('this_year'); closeDropdown('desktop')"
+                    @click.prevent="
+                      selectPreset('this_year');
+                      closeDropdown('desktop')
+                    "
                     >This Year</a
                   >
                 </li>
@@ -125,7 +152,10 @@
                    <a
                     class="dropdown-item"
                     href="#"
-@click.prevent="selectedPreset = ''; closeDropdown('desktop')"
+                    @click.prevent="
+                      selectedPreset = '';
+                      closeDropdown('desktop')
+                    "
                     >Custom Range</a
                   >
                 </li>
@@ -197,7 +227,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('current_week'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('current_week');
+                    closeDropdown('mobile')
+                  "
                   >Current Week</a
                 >
               </li>
@@ -206,7 +239,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('last_week'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('last_week');
+                    closeDropdown('mobile')
+                  "
                   >Last Week</a
                 >
               </li>
@@ -215,7 +251,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('last_2_weeks'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('last_2_weeks');
+                    closeDropdown('mobile')
+                  "
                   >Last 2 Weeks</a
                 >
               </li>
@@ -224,7 +263,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('last_4_weeks'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('last_4_weeks');
+                    closeDropdown('mobile')
+                  "
                   >Last 4 Weeks</a
                 >
               </li>
@@ -237,7 +279,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('current_month'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('current_month');
+                    closeDropdown('mobile')
+                  "
                   >Current Month</a
                 >
               </li>
@@ -246,7 +291,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('last_month'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('last_month');
+                    closeDropdown('mobile')
+                  "
                   >Last Month</a
                 >
               </li>
@@ -255,7 +303,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('last_3_months'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('last_3_months');
+                    closeDropdown('mobile')
+                  "
                   >Last 3 Months</a
                 >
               </li>
@@ -264,7 +315,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('last_6_months'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('last_6_months');
+                    closeDropdown('mobile')
+                  "
                   >Last 6 Months</a
                 >
               </li>
@@ -273,7 +327,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectPreset('this_year'); closeDropdown('mobile')"
+                  @click.prevent="
+                    selectPreset('this_year');
+                    closeDropdown('mobile')
+                  "
                   >This Year</a
                 >
               </li>
@@ -284,7 +341,10 @@
                  <a
                   class="dropdown-item"
                   href="#"
-@click.prevent="selectedPreset = ''; closeDropdown('mobile')"
+                  @click.prevent="
+                    selectedPreset = '';
+                    closeDropdown('mobile')
+                  "
                   >Custom Range</a
                 >
               </li>
@@ -850,7 +910,7 @@ const fetchTimeData = async () => {
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekStart.getDate() + 6)
 
-      // Create a unique key for this week  
+      // Create a unique key for this week
       const weekKey = `Week-${formatYYYYMMDD(weekStart)}`
 
       // Convert to strings for formatting properly
@@ -1021,7 +1081,6 @@ const fetchTimeData = async () => {
     }
   }
 }
-
 
 // Helper function to get the start date (Sunday) and end date (Saturday) of a week
 const getWeekDates = (date) => {
