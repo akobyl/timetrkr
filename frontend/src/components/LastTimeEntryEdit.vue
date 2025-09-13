@@ -38,7 +38,21 @@
           <div class="col-md-3">
              <label for="lastEndTime" class="form-label">End Time</label>
             <div class="input-group">
-               <input
+               <button
+                type="button"
+                class="btn btn-outline-danger btn-sm"
+                @click="addMinutes(-15)"
+                title="Subtract 15 minutes"
+              >
+                 -15 </button
+              > <button
+                type="button"
+                class="btn btn-outline-danger btn-sm"
+                @click="addMinutes(-5)"
+                title="Subtract 5 minutes"
+              >
+                 -5 </button
+              > <input
                 type="time"
                 class="form-control"
                 id="lastEndTime"
