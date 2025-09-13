@@ -37,14 +37,14 @@
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="10"
-                  @click="timeEntriesStore.adjustTime('start', -15)"
+                  @click="timeEntriesStore.adjustTime('start', -15); updateEndTime()"
                 >
                    -15m</button
                 > <button
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="11"
-                  @click="timeEntriesStore.adjustTime('start', -5)"
+                  @click="timeEntriesStore.adjustTime('start', -5); updateEndTime()"
                 >
                    -5m</button
                 >
@@ -62,14 +62,14 @@
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="12"
-                  @click="timeEntriesStore.adjustTime('start', 5)"
+                  @click="timeEntriesStore.adjustTime('start', 5); updateEndTime()"
                 >
                    +5m</button
                 > <button
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="13"
-                  @click="timeEntriesStore.adjustTime('start', 15)"
+                  @click="timeEntriesStore.adjustTime('start', 15); updateEndTime()"
                 >
                    +15m</button
                 >
@@ -78,7 +78,7 @@
                 type="button"
                 class="btn btn-outline-primary ms-2"
                 tabindex="14"
-                @click="timeEntriesStore.setTimeToNow('start')"
+                @click="timeEntriesStore.setTimeToNow('start'); updateEndTime()"
               >
                  Now</button
               >
