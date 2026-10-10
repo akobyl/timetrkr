@@ -1,5 +1,5 @@
-from pydantic import BaseModel, field_validator, model_validator
-from datetime import date, time
+from pydantic import BaseModel, Field, field_validator, model_validator
+from datetime import date, datetime, time
 from typing import Optional, List
 
 
@@ -104,3 +104,23 @@ class TimeSummary(BaseModel):
     total_minutes: int
     entries_count: int
     days_with_entries: int
+
+
+class ApiTokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class ApiToken(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ApiTokenCreated(ApiToken):
+    """Returned only on creation; the only time the plaintext token is visible."""
+
+    token: str

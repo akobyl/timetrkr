@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -27,6 +29,18 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
+API_TOKEN_PREFIX = "ttk_"
+
+
+def hash_api_token(token: str) -> str:
+    # Tokens are high-entropy random strings, so a fast hash is sufficient.
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def generate_api_token() -> str:
+    return API_TOKEN_PREFIX + secrets.token_urlsafe(32)
+
+
 def get_user(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
 
@@ -51,23 +65,49 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-):
-    credentials_exception = HTTPException(
+def _credentials_exception():
+    return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def _user_from_api_token(db: Session, token: str):
+    api_token = (
+        db.query(models.ApiToken)
+        .filter(models.ApiToken.token_hash == hash_api_token(token))
+        .first()
+    )
+    if api_token is None:
+        raise _credentials_exception()
+    api_token.last_used_at = datetime.utcnow()
+    db.commit()
+    return api_token.user
+
+
+async def get_session_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
+    """Authenticate with a login (JWT) token only."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
-            raise credentials_exception
+            raise _credentials_exception()
         token_data = schemas.TokenData(username=username)
     except JWTError:
-        raise credentials_exception
+        raise _credentials_exception()
     user = get_user(db, username=token_data.username)
     if user is None:
-        raise credentials_exception
+        raise _credentials_exception()
     return user
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
+    """Authenticate with either an API token or a login (JWT) token."""
+    if token.startswith(API_TOKEN_PREFIX):
+        return _user_from_api_token(db, token)
+    return await get_session_user(token, db)

@@ -8,7 +8,7 @@ import os
 
 from app import models, schemas, auth
 from app.database import get_db
-from app.routers import auth as auth_router, users, time_entries
+from app.routers import auth as auth_router, users, time_entries, api_tokens
 
 # Define static directories
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
@@ -53,6 +53,7 @@ if os.path.exists(DIST_DIR):
 app.include_router(auth_router.router)
 app.include_router(users.router)
 app.include_router(time_entries.router)
+app.include_router(api_tokens.router)
 
 
 # Keep time-summary endpoint in main for backward compatibility

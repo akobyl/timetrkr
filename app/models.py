@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Time, Date
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, ForeignKey, Time, Date, DateTime
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -10,6 +11,9 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     time_entries = relationship("TimeEntry", back_populates="user")
+    api_tokens = relationship(
+        "ApiToken", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class TimeEntry(Base):
@@ -22,3 +26,21 @@ class TimeEntry(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="time_entries")
+
+
+class ApiToken(Base):
+    """Long-lived, revocable token for programmatic API access.
+
+    Only the SHA-256 hash of the token is stored; the plaintext is shown once.
+    """
+
+    __tablename__ = "api_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_used_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="api_tokens")

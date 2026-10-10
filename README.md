@@ -52,6 +52,19 @@ TimeTrkr provides a clean, intuitive interface for tracking work hours with feat
 - **Code Quality**: Structured with linting and validation
 - **Deployment**: Docker support with Kubernetes manifests
 
+## API Access
+
+Create a token on the Profile page (tokens don't expire; revoke them there), then:
+
+```bash
+curl -H "Authorization: Bearer ttk_..." http://localhost:8000/time-entries/
+curl -X POST -H "Authorization: Bearer ttk_..." -H "Content-Type: application/json" \
+  -d '{"date": "2024-01-01", "start_time": "09:00", "end_time": "10:00"}' \
+  http://localhost:8000/time-entries/
+```
+
+Interactive docs are at `/docs`. Token management itself requires a normal login.
+
 ## Installation
 
 ### Prerequisites

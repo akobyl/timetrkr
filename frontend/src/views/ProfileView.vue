@@ -31,6 +31,8 @@
 
         </div>
 
+        <ApiTokensCard />
+
         <div class="border rounded p-3">
 
           <h5>App Settings</h5>
@@ -50,6 +52,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import ApiTokensCard from '../components/ApiTokensCard.vue'
 
 const authStore = useAuthStore()
 
