@@ -5,13 +5,12 @@ from datetime import timedelta
 
 from app import schemas, auth
 from app.database import get_db
-from app.services.user_service import UserService
 
 router = APIRouter(prefix="", tags=["authentication"])
 
 
 @router.post("/token", response_model=schemas.Token)
-async def login_for_access_token(
+def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     """Authenticate user and return access token"""

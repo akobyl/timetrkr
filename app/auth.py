@@ -86,7 +86,7 @@ def _user_from_api_token(db: Session, token: str):
     return api_token.user
 
 
-async def get_session_user(
+def get_session_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
     """Authenticate with a login (JWT) token only."""
@@ -104,10 +104,10 @@ async def get_session_user(
     return user
 
 
-async def get_current_user(
+def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
     """Authenticate with either an API token or a login (JWT) token."""
     if token.startswith(API_TOKEN_PREFIX):
         return _user_from_api_token(db, token)
-    return await get_session_user(token, db)
+    return get_session_user(token, db)
