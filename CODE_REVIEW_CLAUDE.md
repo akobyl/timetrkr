@@ -117,7 +117,7 @@ Now that API tokens invite scripted access, this matters: a script that leaves o
 ### B5. Analysis week labels are off by one day west of UTC
 [AnalysisView.vue:865-866](frontend/src/views/AnalysisView.vue#L865-L866) uses `new Date('2025-04-20')`, which parses as **UTC midnight**. In any US timezone, that is the previous evening locally, so `toLocaleDateString` labels the week "Apr 19 – Apr 25". The rest of that file deliberately parses dates at local noon to avoid exactly this, so the two halves of the file disagree.
 
-Related: the heat map counts one extra 5-minute block per entry because of an inclusive `<= endBlock` ([line 1047](frontend/src/views/AnalysisView.vue#L1047)). Weeks are also defined three ways: Monday to Sunday on the dashboard, "starting at whatever start date you picked" in Analysis, and comments in Analysis that say Sunday to Saturday.
+Related heat-map issue — **DONE**: `buildTimeHeatMap` now samples half-open intervals and unions occupied blocks per calendar day, splitting overnight work at midnight and clipping to the selected range. Zero-duration entries contribute no activity; normalized intensity stays within 0–1. Regression tests cover adjacency, overlap/duplicates, zero duration, overnight wraparound, range boundaries, and year rollover. Weeks are still defined three ways: Monday to Sunday on the dashboard, "starting at whatever start date you picked" in Analysis, and comments in Analysis that say Sunday to Saturday.
 
 ### B6. A fresh container deploy has no tables
 - `alembic` is not in `pyproject.toml` or `uv.lock`. It is installed in the local `.venv` by hand, so `uv sync --frozen` in the Dockerfile doesn't install it.

@@ -112,13 +112,15 @@ There is no overlap check or duplicate protection. Two entries `09:00–10:00` a
 
 **Improve:** choose a product policy. If tracking elapsed work, reject or warn about overlaps, including overnight overlap with adjacent dates. If simultaneous activities are valid, label totals as summed entry time. Add import deduplication and, where retries can occur, idempotency support. Concurrency-sensitive rules belong in a transaction, not solely in frontend validation.
 
-### 10. P1 — Analytics heat map overcounts intervals
+### 10. P1 — Analytics heat map overcounts intervals — DONE
 
 **Evidence:** `frontend/src/views/AnalysisView.vue:1047` (`block <= endBlock`).
 
 A `09:00–09:05` entry marks both 09:00 and 09:05 blocks. Adjacent entries double-count their shared endpoint; zero-duration early-morning entries still mark a block. The count divided by days can exceed one with overlapping entries.
 
 **Improve:** treat intervals as half-open (`start <= block < end`). If the metric means “fraction of days worked at this time,” union occupied blocks per calendar day before counting days; if it means entry frequency, label it accordingly. Test adjacency, overlap, zero duration, and overnight wraparound.
+
+**Resolved:** extracted a tested `buildTimeHeatMap` utility with half-open five-minute boundary sampling and a union of occupied blocks per calendar day. Zero-duration entries contribute no activity. Overnight entries split at midnight, including carry-in from the previous date, and activity is clipped to the selected range. Counts represent distinct days; intensity is the fraction of active calendar days and stays within 0–1. The chart explains this metric. Regression tests cover adjacency, overlap/duplicates, zero duration, overnight wraparound, range clipping, year rollover, midnight endpoints, and seconds.
 
 ### 11. P1 — Week definitions and date arithmetic differ between screens
 

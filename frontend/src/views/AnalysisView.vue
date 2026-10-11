@@ -471,6 +471,10 @@
           <div class="mb-4 mt-5">
 
             <h4>Time of Day Heat Map</h4>
+            <p class="text-muted">
+              Number of calendar days worked at each five-minute boundary.
+              Overlapping entries count once per day; overnight work is split at midnight.
+            </p>
 
             <div style="position: relative; height: 250px; width: 100%">
                <canvas ref="heatChart"></canvas>
@@ -569,6 +573,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { apiService } from '../services/api'
+import { buildTimeHeatMap } from '../utils/timeHeatMap.js'
 import {
   Chart,
   BarController,
@@ -1016,57 +1021,11 @@ const fetchTimeData = async () => {
     // We want to show all weeks in the selected date range, even if they have 0 hours
     // This ensures the weekly chart covers the exact same date range as the daily chart
 
-    // Calculate the heat map data (time of day frequency)
-    // We'll create 5-minute blocks throughout the day (288 blocks)
-    const timeBlocks = 288 // 24 hours * 12 blocks per hour (5-minute intervals)
-    const timeBlockCounts = new Array(timeBlocks).fill(0)
-    const daysWithEntries = new Set() // Track unique days with entries
-
-    // Process each time entry
-    entries.forEach((entry) => {
-      // Only process entries within the selected date range
-      if (entry.date < startDate.value || entry.date > endDate.value) return
-
-      // Add this day to our set of days with entries
-      daysWithEntries.add(entry.date)
-
-      // Convert start and end times to minute offsets in the day
-      const [startHour, startMin] = entry.start_time.split(':').map(Number)
-      const [endHour, endMin] = entry.end_time.split(':').map(Number)
-
-      // Calculate start and end blocks
-      const startBlock = Math.floor((startHour * 60 + startMin) / 5)
-      let endBlock = Math.floor((endHour * 60 + endMin) / 5)
-
-      // Handle overnight entries
-      if (endBlock < startBlock) {
-        endBlock += timeBlocks
-      }
-
-      // Mark each 5-minute block in this time range
-      for (let block = startBlock; block <= endBlock; block++) {
-        const actualBlock = block % timeBlocks // Wrap around for overnight entries
-        timeBlockCounts[actualBlock]++
-      }
-    })
-
-    // Create the heat map data structure
-    timeHeatData.value = timeBlockCounts.map((count, index) => {
-      // Calculate the hour and minute for this block
-      const totalMinutes = index * 5
-      const hour = Math.floor(totalMinutes / 60)
-      const minute = totalMinutes % 60
-
-      // Format the time label as HH:MM (no seconds)
-      const timeLabel = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-
-      return {
-        time: timeLabel,
-        count: count,
-        // Calculate a normalized value for color intensity (0-1)
-        intensity: daysWithEntries.size > 0 ? count / daysWithEntries.size : 0,
-      }
-    })
+    timeHeatData.value = buildTimeHeatMap(
+      entries,
+      startDate.value,
+      endDate.value
+    )
   } catch (err) {
     console.error('Error fetching time data:', err)
     error.value = 'Failed to load time data. Please try again later.'
@@ -1505,7 +1464,7 @@ const updateHeatChart = () => {
       labels: labels,
       datasets: [
         {
-          label: 'Activity',
+          label: 'Days with Activity',
           data: data,
           // Use a single gradient for all bars
           backgroundColor: function (context) {
@@ -1544,6 +1503,7 @@ const updateHeatChart = () => {
       scales: {
         y: {
           beginAtZero: true,
+          ticks: { precision: 0 },
           title: {
             display: true,
             text: 'Days with Activity',
