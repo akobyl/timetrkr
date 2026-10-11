@@ -197,6 +197,10 @@ import { useTimeEntriesStore } from '../stores/timeEntries'
 import { formatUtils } from '../services/api'
 import EditTimeEntryModal from '../components/EditTimeEntryModal.vue'
 import { Modal } from 'bootstrap'
+import {
+  exportEntriesToCSV,
+  importEntriesFromCSV,
+} from '../utils/timeEntryCsv.js'
 
 const timeEntriesStore = useTimeEntriesStore()
 const editingEntry = ref(null)
@@ -305,21 +309,7 @@ function exportToCSV() {
       return
     }
 
-    // Create CSV header
-    const csvHeader = 'Date,Start Time,End Time,Duration\n'
-
-    // Create CSV rows
-    const csvRows = entries
-      .map((entry) => {
-        const duration = formatUtils.calculateDuration(
-          entry.start_time,
-          entry.end_time
-        )
-        return `${entry.date},${entry.start_time},${entry.end_time},"${duration}"`
-      })
-      .join('\n')
-
-    const csvContent = csvHeader + csvRows
+    const csvContent = exportEntriesToCSV(entries)
 
     // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -364,94 +354,11 @@ async function importFromCSV(event) {
     importError.value = ''
 
     const text = await file.text()
-    const lines = text.split('\n').filter((line) => line.trim())
-
-    if (lines.length < 2) {
-      throw new Error('CSV file must have at least a header and one data row')
-    }
-
-    // Parse header
-    const header = lines[0]
-      .toLowerCase()
-      .split(',')
-      .map((h) => h.trim().replace(/"/g, ''))
-    const requiredColumns = ['date', 'start time', 'end time']
-
-    // Check for required columns
-    const missingColumns = requiredColumns.filter(
-      (col) => !header.some((h) => h.includes(col.replace(' ', '')))
-    )
-
-    if (missingColumns.length > 0) {
-      throw new Error(`Missing required columns: ${missingColumns.join(', ')}`)
-    }
-
-    // Find column indices
-    const dateIndex = header.findIndex((h) => h.includes('date'))
-    const startIndex = header.findIndex((h) => h.includes('start'))
-    const endIndex = header.findIndex((h) => h.includes('end'))
-
-    if (dateIndex === -1 || startIndex === -1 || endIndex === -1) {
-      throw new Error('Could not find required columns in CSV')
-    }
-
     importStatus.value = 'Parsing entries...'
-
-    // Parse data rows
-    const newEntries = []
-    const errors = []
-
-    for (let i = 1; i < lines.length; i++) {
-      try {
-        const row = lines[i]
-          .split(',')
-          .map((cell) => cell.trim().replace(/"/g, ''))
-
-        if (row.length < Math.max(dateIndex, startIndex, endIndex) + 1) {
-          errors.push(`Row ${i + 1}: Not enough columns`)
-          continue
-        }
-
-        const date = row[dateIndex]
-        const startTime = row[startIndex]
-        const endTime = row[endIndex]
-
-        // Validate date format (YYYY-MM-DD)
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          errors.push(`Row ${i + 1}: Invalid date format (expected YYYY-MM-DD)`)
-          continue
-        }
-
-        // Validate time format (HH:MM)
-        if (
-          !/^\d{2}:\d{2}$/.test(startTime) ||
-          !/^\d{2}:\d{2}$/.test(endTime)
-        ) {
-          errors.push(`Row ${i + 1}: Invalid time format (expected HH:MM)`)
-          continue
-        }
-
-        // Validate entry using store validation
-        const validation = timeEntriesStore.validateEntry({
-          startTime,
-          endTime,
-          date,
-        })
-
-        if (!validation.isValid) {
-          errors.push(`Row ${i + 1}: ${validation.errors.join(', ')}`)
-          continue
-        }
-
-        newEntries.push({
-          date,
-          start_time: startTime,
-          end_time: endTime,
-        })
-      } catch (rowError) {
-        errors.push(`Row ${i + 1}: ${rowError.message}`)
-      }
-    }
+    const { entries: newEntries, errors } = importEntriesFromCSV(
+      text,
+      timeEntriesStore.validateEntry
+    )
 
     if (newEntries.length === 0) {
       throw new Error('No valid entries found in CSV file')
