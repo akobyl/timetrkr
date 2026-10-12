@@ -575,6 +575,17 @@ import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { apiService } from '../services/api'
 import { effectiveMinutesByDate } from '../utils/timeTotals.js'
 import { buildTimeHeatMap } from '../utils/timeHeatMap.js'
+import { buildWeeklyHours } from '../utils/weeklyHours.js'
+import {
+  getCurrentWeekRange,
+  getWeekRange,
+  getLocalDateString,
+  addCalendarDays,
+  generateDateRange,
+  formatLocalDate as formatYYYYMMDD,
+  formatCalendarDate as formatDate,
+  formatCalendarDate,
+} from '../utils/dateUtils.js'
 import {
   Chart,
   BarController,
@@ -658,13 +669,9 @@ const setDefaultDateRange = () => {
   // Reset manual input flag
   manualDateInput = false
 
-  const now = new Date()
-  // Get current week dates (Sunday to Saturday)
-  const { start, end } = getWeekDates(now)
-
-  // Format as YYYY-MM-DD in local time
-  endDate.value = formatYYYYMMDD(end)
-  startDate.value = formatYYYYMMDD(start)
+  const { start, end } = getCurrentWeekRange()
+  startDate.value = start
+  endDate.value = end
 
   // Set preset selection to current week
   selectedPreset.value = 'current_week'
@@ -679,47 +686,24 @@ const applyDatePreset = () => {
   let start, end
 
   switch (selectedPreset.value) {
-    // Week-based options
-    case 'current_week': {
-      // Current week (Sunday to Saturday)
-      const thisWeek = getWeekDates(now)
-      start = thisWeek.start
-      end = thisWeek.end
-      break
-    }
-
-    case 'last_week': {
-      // Last week (Sunday to Saturday of previous week)
-      const lastWeek = new Date(now)
-      lastWeek.setDate(lastWeek.getDate() - 7)
-      const lastWeekDates = getWeekDates(lastWeek)
-      start = lastWeekDates.start
-      end = lastWeekDates.end
-      break
-    }
-
-    case 'last_2_weeks': {
-      // Last 2 weeks - using exact 14 days from today
-      // Get the current week's Sunday
-      const currentWeek2 = getWeekDates(now)
-      // For 2 weeks, start exactly 14 days before the end date
-      const exactTwoWeeksAgo = new Date(currentWeek2.end)
-      exactTwoWeeksAgo.setDate(exactTwoWeeksAgo.getDate() - 13) // 14 days including today
-      start = exactTwoWeeksAgo
-      end = currentWeek2.end
-      break
-    }
-
+    case 'current_week':
+    case 'last_week':
+    case 'last_2_weeks':
     case 'last_4_weeks': {
-      // Last 4 weeks - using exact 28 days from today
-      // Get the current week's end date
-      const currentWeekEnd = getWeekDates(now).end
-      // For 4 weeks, start exactly 28 days before the end date
-      const exactFourWeeksAgo = new Date(currentWeekEnd)
-      exactFourWeeksAgo.setDate(exactFourWeeksAgo.getDate() - 27) // 28 days including today
-      start = exactFourWeeksAgo
-      end = currentWeekEnd
-      break
+      const week = getWeekRange(getLocalDateString())
+      const weeks = selectedPreset.value === 'last_4_weeks' ? 4 : 2
+      if (selectedPreset.value === 'last_week') {
+        startDate.value = addCalendarDays(week.start, -7)
+        endDate.value = addCalendarDays(week.end, -7)
+      } else {
+        startDate.value =
+          selectedPreset.value === 'current_week'
+            ? week.start
+            : addCalendarDays(week.start, -7 * (weeks - 1))
+        endDate.value = week.end
+      }
+      fetchTimeData()
+      return
     }
 
     // Month-based options
@@ -831,7 +815,11 @@ const fetchTimeData = async () => {
       )
     }
 
-    const minutesByDate = effectiveMinutesByDate(entries, startDate.value, endDate.value)
+    const minutesByDate = effectiveMinutesByDate(
+      entries,
+      startDate.value,
+      endDate.value
+    )
     dailyHours.value = dateRange.map((date) => {
       const hours = (minutesByDate[date] || 0) / 60
 
@@ -842,164 +830,20 @@ const fetchTimeData = async () => {
       }
     })
 
-    // Calculate weekly hours
-    // Group days into Sunday-Saturday weeks and sum up hours
-    const weekMap = new Map()
-
-    // Parse start and end dates to use for boundary checking
-    const startDateObj = new Date(startDate.value)
-    const endDateObj = new Date(endDate.value)
-
-    // First, get the exact Sunday of the selected start date
-    // Use the exact start date from selected range, don't go back to previous Sunday
-    // This ensures we don't include weeks that are not in the selected range
-    const targetSunday = new Date(startDateObj)
-
-    console.log(
-      `Original start date: ${startDateObj.toISOString()} (day of week: ${startDateObj.getDay()})`
-    )
-
-    // Only adjust to previous Sunday if explicitly requested via startOnSunday flag
-    const startOnSunday = false // Set to true if you want to always start on Sunday
-
-    if (startOnSunday && targetSunday.getDay() > 0) {
-      const dayOfWeek = targetSunday.getDay()
-      targetSunday.setDate(targetSunday.getDate() - dayOfWeek)
-      console.log(`Adjusted to previous Sunday: ${targetSunday.toISOString()}`)
-    }
-
-    // For each Sunday-Saturday week that intersects our date range
-    let weekStart = new Date(targetSunday)
-    let weekIndex = 1 // Start with Week 1
-
-    console.log(
-      'Starting week calculation with first Sunday:',
-      weekStart.toISOString()
-    )
-
-    // Only generate weeks that have their start date within our date range
-    // This prevents generating weeks that start before our range
-    while (weekStart <= endDateObj) {
-      // Only add weeks that start on or after our start date
-      if (weekStart < startDateObj) {
-        console.log(
-          `Skipping week that starts before our range: ${weekStart.toISOString()}`
-        )
-        // Move to next week
-        weekStart = new Date(weekStart)
-        weekStart.setDate(weekStart.getDate() + 7)
-        continue
-      }
-
-      // Calculate end of this week (Saturday)
-      const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekStart.getDate() + 6)
-
-      // Create a unique key for this week
-      const weekKey = `Week-${formatYYYYMMDD(weekStart)}`
-
-      // Convert to strings for formatting properly
-      const weekStartStr = weekStart.toISOString().split('T')[0]
-      const weekEndStr = weekEnd.toISOString().split('T')[0]
-
-      // Format dates directly using Date objects to avoid any inconsistencies
-      // Get the formatted display strings directly from the Date objects
-      const displayStartStr = weekStart.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-      })
-      const displayEndStr = weekEnd.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-      })
-
-      console.log(
-        `Week ${weekIndex}: ${weekStartStr} (${displayStartStr}) to ${weekEndStr} (${displayEndStr})`
-      )
-
-      // Create an entry for this week
-      weekMap.set(weekKey, {
-        weekNumber: weekIndex,
-        startDate: new Date(weekStart), // Keep for sorting
-        weekStart: weekStartStr,
-        weekEnd: weekEndStr,
-        weekLabel: `${displayStartStr} - ${displayEndStr}`, // Use date range as label
-        weekRange: `${displayStartStr} - ${displayEndStr}`,
-        hours: 0,
-        sortKey: weekStart.getTime(), // Sort by start date timestamp
-      })
-
-      // Move to next week
-      weekStart = new Date(weekStart)
-      weekStart.setDate(weekStart.getDate() + 7)
-      weekIndex++
-    }
-
-    // Now, assign each day's hours to the appropriate week
-    // Only process days that fall exactly within our date range
-    dailyHours.value.forEach((day) => {
-      if (!day.rawDate) return
-
-      const date = new Date(day.rawDate)
-
-      // Skip dates outside our range (strict check)
-      if (date < startDateObj || date > endDateObj) {
-        console.log(`Skipping out-of-range date: ${day.rawDate}`)
-        return
-      }
-
-      // Find which week this day belongs to, but only within the selected range
-      // For example, if we've selected Apr 20-26, we only want days to go into that week
-      // and not into the previous week (Apr 13-19) if a day happens to fall in that range
-
-      // Check each of our predefined weeks
-      let found = false
-      for (const weekData of weekMap.values()) {
-        // Check if this day falls within this week's range
-        const weekStartDate = new Date(weekData.weekStart)
-        const weekEndDate = new Date(weekData.weekEnd)
-
-        // Day must be within this specific week's range
-        if (date >= weekStartDate && date <= weekEndDate) {
-          // Add hours to this week
-          weekData.hours += day.hours
-          found = true
-          break
-        }
-      }
-
-      if (!found) {
-        console.warn(
-          `Day ${day.rawDate} doesn't match any week in range ${startDate.value} to ${endDate.value}`
-        )
+    weeklyHours.value = buildWeeklyHours(
+      minutesByDate,
+      startDate.value,
+      endDate.value
+    ).map((week, index) => {
+      const range = `${formatDate(week.start)} - ${formatDate(week.end)}`
+      const label = `${range}${week.isPartial ? ' (partial week)' : ''}`
+      return {
+        ...week,
+        weekNumber: index + 1,
+        weekLabel: label,
+        weekRange: label,
       }
     })
-
-    // Convert map to array, filter with stronger criteria, and sort by week number
-    weeklyHours.value = Array.from(weekMap.values())
-      .filter((week) => {
-        // Always keep weeks with hours
-        if (week.hours > 0) {
-          return true
-        }
-
-        // For zero-hour weeks, apply stricter filtering
-        const weekStart = new Date(week.weekStart)
-        const weekEnd = new Date(week.weekEnd)
-
-        // If the week is completely contained within our date range, keep it
-        // This ensures we show zero-hour weeks that are explicitly in our range
-        if (weekStart >= startDateObj && weekEnd <= endDateObj) {
-          return true
-        }
-
-        // For partial overlap weeks with zero hours, filter them out
-        return false
-      })
-      .sort((a, b) => a.sortKey - b.sortKey)
-
-    // We want to show all weeks in the selected date range, even if they have 0 hours
-    // This ensures the weekly chart covers the exact same date range as the daily chart
 
     timeHeatData.value = buildTimeHeatMap(
       entries,
@@ -1021,164 +865,12 @@ const fetchTimeData = async () => {
   }
 }
 
-// Helper function to get the start date (Sunday) and end date (Saturday) of a week
-const getWeekDates = (date) => {
-  // Create a copy of the date to avoid modifying the original
-  const d = new Date(date)
-
-  // Calculate start date (Sunday) - go back to the Sunday of this week
-  const day = d.getDay() // 0 = Sunday, 1 = Monday, etc.
-
-  // Create a new date for Sunday (beginning of week)
-  const start = new Date(d)
-  // If not already Sunday, go back to the previous Sunday
-  if (day !== 0) {
-    start.setDate(d.getDate() - day)
-  }
-  start.setHours(0, 0, 0, 0) // Set to start of day
-
-  // Calculate end date (Saturday = Sunday + 6 days)
-  const end = new Date(start)
-  end.setDate(start.getDate() + 6)
-  end.setHours(23, 59, 59, 999) // Set to end of day
-
-  console.log(
-    `Week dates for ${d.toISOString()}: ${start.toISOString()} to ${end.toISOString()}`
-  )
-
-  return { start, end }
-}
-
-// Helper to generate all dates in a range (inclusive of both start and end)
-const generateDateRange = (start, end) => {
-  console.log(`Generating date range from ${start} to ${end}`)
-
-  // Start with empty array
-  const dates = []
-
-  // Parse dates by components to avoid timezone issues
-  const [startYear, startMonth, startDay] = start.split('-').map(Number)
-  const [endYear, endMonth, endDay] = end.split('-').map(Number)
-
-  // Create Date objects for comparison (set to noon to avoid timezone issues)
-  const startDate = new Date(startYear, startMonth - 1, startDay, 12, 0, 0)
-  const endDate = new Date(endYear, endMonth - 1, endDay, 12, 0, 0)
-
-  // Extra safety check
-  if (startDate > endDate) {
-    console.error('Start date is after end date')
-    return dates
-  }
-
-  // Initialize current date to start date
-  let currentYear = startYear
-  let currentMonth = startMonth - 1 // JS months are 0-indexed
-  let currentDay = startDay
-
-  // Keep generating dates until we've reached or passed the end date
-  while (true) {
-    // Create a date object for the current date (set to noon)
-    const currentDate = new Date(
-      currentYear,
-      currentMonth,
-      currentDay,
-      12,
-      0,
-      0
-    )
-
-    // Stop if we've passed the end date
-    if (currentDate > endDate) {
-      break
-    }
-
-    // Format current date and add to array
-    const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
-    dates.push(formattedDate)
-
-    // If we've reached the end date, we're done
-    if (
-      currentYear === endYear &&
-      currentMonth === endMonth - 1 &&
-      currentDay === endDay
-    ) {
-      break
-    }
-
-    // Advance to next day
-    currentDay++
-
-    // Check if we need to roll over to next month
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
-    if (currentDay > daysInMonth) {
-      currentDay = 1
-      currentMonth++
-
-      // Check if we need to roll over to next year
-      if (currentMonth > 11) {
-        currentMonth = 0
-        currentYear++
-      }
-    }
-  }
-
-  // Add debugging info
-  if (dates.length > 0) {
-    console.log(
-      `Generated ${dates.length} dates from ${dates[0]} to ${dates[dates.length - 1]}`
-    )
-  } else {
-    console.warn('No dates were generated!')
-  }
-
-  return dates
-}
-
-// Helper function to format Date as YYYY-MM-DD in local timezone
-const formatYYYYMMDD = (date) => {
-  const year = date.getFullYear()
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const day = date.getDate().toString().padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-// Format date for display
-const formatDate = (dateStr) => {
-  // Handle both ISO strings and Date objects
-  let date
-  if (dateStr instanceof Date) {
-    date = new Date(dateStr) // Create a copy to avoid modifying the original
-    date.setHours(12, 0, 0, 0) // Set to noon to avoid timezone issues
-  } else {
-    const parts = dateStr.split('-')
-    // JavaScript months are 0-based (0 = January)
-    const year = parseInt(parts[0])
-    const month = parseInt(parts[1]) - 1
-    const day = parseInt(parts[2])
-
-    // Create a date object at noon to avoid timezone issues
-    date = new Date(year, month, day, 12, 0, 0)
-  }
-
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-// Format date for the display below the date picker
-const formatDateDisplay = (dateStr) => {
-  if (!dateStr) return ''
-
-  const parts = dateStr.split('-')
-  const year = parseInt(parts[0])
-  const month = parseInt(parts[1]) - 1
-  const day = parseInt(parts[2])
-
-  const date = new Date(year, month, day)
-  return date.toLocaleDateString(undefined, {
+const formatDateDisplay = (value) =>
+  formatCalendarDate(value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
-}
 
 // Get friendly label for preset options
 const getPresetLabel = (preset) => {
@@ -1336,7 +1028,7 @@ const updateWeeklyChart = () => {
         x: {
           title: {
             display: true,
-            text: 'Weeks (Sun-Sat)',
+            text: 'Weeks (Mon–Sun)',
           },
         },
       },
@@ -1351,10 +1043,7 @@ const updateWeeklyChart = () => {
             },
             label: function (context) {
               const week = weeklyHours.value[context.dataIndex]
-              return [
-                `${context.formattedValue} hours`,
-                `${week.weekRange} (Sun-Sat)`,
-              ]
+              return [`${context.formattedValue} hours`, `${week.weekRange}`]
             },
           },
         },

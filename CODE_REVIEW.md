@@ -124,13 +124,15 @@ A `09:00–09:05` entry marks both 09:00 and 09:05 blocks. Adjacent entries doub
 
 **Resolved:** extracted a tested `buildTimeHeatMap` utility with half-open five-minute boundary sampling and a union of occupied blocks per calendar day. Zero-duration entries contribute no activity. Overnight entries split at midnight, including carry-in from the previous date, and activity is clipped to the selected range. Counts represent distinct days; intensity is the fraction of active calendar days and stays within 0–1. The chart explains this metric. Regression tests cover adjacency, overlap/duplicates, zero duration, overnight wraparound, range clipping, year rollover, midnight endpoints, and seconds.
 
-### 11. P1 — Week definitions and date arithmetic differ between screens
+### 11. P1 — Week definitions and date arithmetic differ between screens — DONE
 
 **Evidence:** `frontend/src/stores/timeEntries.js:48`; `frontend/src/views/AnalysisView.vue:655,865–948`.
 
 Dashboard uses Monday–Sunday. Analytics uses Sunday-based helpers, while its main weekly grouping starts at the selected start date because `startOnSunday` is false. A Wednesday custom range therefore becomes Wednesday–Tuesday buckets. Analytics also mixes UTC parsing of `YYYY-MM-DD`, local date arithmetic/display, and `toISOString()`, which can shift displayed dates in negative UTC offsets and create DST boundary issues.
 
 **Improve:** define a single week-start policy and calendar-date representation. Use shared local-calendar helpers for date-only values. Align buckets to the selected week definition, clipping the first and last buckets to the requested range. Label partial weeks explicitly. Test identical datasets across dashboard and analytics in several timezones.
+
+**Resolved:** dashboard and analytics share a Monday–Sunday week policy and local-calendar helpers for YYYY-MM-DD values. Analytics presets use the same boundaries; weekly buckets align to Mondays, clip to the requested range, retain zero-hour weeks, and label partial weeks. Date display and overnight carry-in use the shared helpers. Regression tests compare dashboard and analytics datasets across UTC, negative and positive offsets, spring/fall DST changes, and calendar rollovers.
 
 ### 12. P2 — Frontend validation and controls diverge
 

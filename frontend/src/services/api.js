@@ -1,3 +1,4 @@
+import { parseLocalDate } from '../utils/dateUtils.js'
 import axios from 'axios'
 import { formatMinutes, calculateDurationMinutes } from '../utils/timeUtils.js'
 
@@ -84,13 +85,7 @@ apiService.interceptors.response.use(
 // Utility format functions
 const formatUtils = {
   formatDate(dateStr) {
-    // Format YYYY-MM-DD to localized date
-    const parts = dateStr.split('-')
-    const year = parseInt(parts[0])
-    const month = parseInt(parts[1]) - 1 // JS months are 0-based
-    const day = parseInt(parts[2])
-
-    const date = new Date(year, month, day)
+    const date = parseLocalDate(dateStr)
     return date.toLocaleDateString()
   },
 

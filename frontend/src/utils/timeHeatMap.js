@@ -1,15 +1,11 @@
+import { addCalendarDays } from './dateUtils.js'
+
 const BLOCK_MINUTES = 5
 const BLOCKS_PER_DAY = 288
 
 const minutesOfDay = (time) => {
   const [hours, minutes, seconds = 0] = time.split(':').map(Number)
   return hours * 60 + minutes + seconds / 60
-}
-
-const nextCalendarDay = (date) => {
-  const next = new Date(`${date}T00:00:00Z`)
-  next.setUTCDate(next.getUTCDate() + 1)
-  return next.toISOString().slice(0, 10)
 }
 
 // Sample activity at each five-minute boundary: start <= time < end.
@@ -35,7 +31,7 @@ export function buildTimeHeatMap(entries, startDate, endDate) {
     const end = minutesOfDay(entry.end_time)
     if (end < start) {
       addBlocks(entry.date, start, 24 * 60)
-      addBlocks(nextCalendarDay(entry.date), 0, end)
+      addBlocks(addCalendarDays(entry.date, 1), 0, end)
     } else {
       addBlocks(entry.date, start, end)
     }
