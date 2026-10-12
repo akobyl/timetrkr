@@ -112,6 +112,9 @@ GET /users/me       → 200 text/html
 Now that API tokens invite scripted access, this matters: a script that leaves off the trailing slash gets HTML with a 200 and fails confusingly. **Fix:** see A1 (put the API under `/api`). At minimum, have the catch-all return 404 for anything that looks like an API path.
 
 ### B4. Edit modal can produce invalid times and hides errors
+
+**Error handling — DONE:** Fixed in commit `76be67f` (see finding 7 in `CODE_REVIEW.md`). The modal now uses the shared store validation and write-result contract, displays actionable failures, and stays open with edits available for retry. Quick edit and delete callers also handle failures visibly; dashboard/history refresh failures preserve data with stale indicators and read-only retry controls. Frontend regression tests and production build pass; backend validation: 24 tests passed. The `23:59` clamp and prop mutation concerns remain open. The original finding below is retained for context.
+
 [EditTimeEntryModal.vue:200](frontend/src/components/EditTimeEntryModal.vue#L200) clamps to `23:59`, which isn't a 5-minute increment, so the server rejects it. The `catch` at [line 252](frontend/src/components/EditTimeEntryModal.vue#L252) only does `console.error`, so the user clicks Save and nothing happens. The modal also mutates its `entry` prop directly; ESLint's `vue/no-mutating-props` was turned off to allow this ([eslint.config.js:39](frontend/eslint.config.js#L39)).
 
 ### B5. Analysis week labels are off by one day west of UTC

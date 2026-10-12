@@ -88,7 +88,9 @@ Export emits `Date,Start Time,End Time,Duration`. Import lowercases those header
 
 **Improve:** normalize both expected and actual headers identically, and add an export → import round-trip test. Use a CSV parser if supporting quoted fields, embedded commas, or line breaks; splitting on commas and stripping all quotes is not a general CSV parser. Exported times include seconds from the API, while import currently requires `HH:MM`; normalize those too so fixing headers does not reveal another round-trip failure.
 
-### 7. P1 — Mutation failures disappear in parts of the UI
+### 7. P1 — Mutation failures disappear in parts of the UI — DONE
+
+**DONE:** Fixed in commit `76be67f`. Create, update, and delete use a consistent write-only result contract, and all active callers handle failures visibly. Failed edits remain available for retry. Dashboard and history distinguish loading, empty, and error states, preserve previously loaded data with a stale indicator, and provide a read-only refresh retry. Dashboard refreshes commit a complete snapshot; malformed list responses are rejected instead of converted to empty arrays. Successful writes are acknowledged separately from refresh failures, and successful deletes remove known rows even if refresh fails. Seven store regression tests cover initial/partial load failures, history filter failures and recovery, malformed responses, mutation errors, refresh retries without duplicate writes, and deletion followed by refresh failure. Frontend tests and production build pass; changed-file lint has no errors; backend validation: 24 tests passed. The original finding below is retained for context.
 
 **Evidence:** `frontend/src/stores/timeEntries.js:299–337`; `frontend/src/components/LastTimeEntryEdit.vue:215`; `frontend/src/components/TodayTimePanel.vue:102`; `frontend/src/views/HistoryView.vue:286`; `frontend/src/components/EditTimeEntryModal.vue:252`.
 
