@@ -3,11 +3,21 @@ from datetime import date
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app import models, schemas, auth
+from app import models, schemas, auth, crud
 from app.database import get_db
 from app.services.time_entry_service import TimeEntryService
 
 router = APIRouter(prefix="/time-entries", tags=["time-entries"])
+
+
+@router.post("/import", response_model=schemas.TimeEntryImportResult)
+def import_time_entries(
+    batch: schemas.TimeEntryImport,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Import a batch, skipping matching date/start/end entries for this user."""
+    return crud.import_time_entries(db, batch.entries, current_user.id)
 
 
 @router.post("/", response_model=schemas.TimeEntry)

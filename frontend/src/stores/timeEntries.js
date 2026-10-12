@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiService } from '../services/api'
+import { effectiveMinutesByDate } from '../utils/timeTotals.js'
 
 export const useTimeEntriesStore = defineStore('timeEntries', () => {
   // State
@@ -149,7 +150,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       expandedDays.value = []
 
       // Calculate daily totals for the week
-      calculateDailyTotals()
+      calculateDailyTotals(allEntries)
 
       // Get weekly summary for the full week
       const weekSummaryResponse = await apiService.get('/time-summary/', {
@@ -170,37 +171,23 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     }
   }
 
-  function calculateDailyTotals() {
-    const totals = {}
-
-    weekEntries.value.forEach((entry) => {
-      const dateStr = entry.date
-      if (!totals[dateStr]) {
-        totals[dateStr] = { minutes: 0, count: 0 }
-      }
-
-      // Calculate duration
-      const [startHours, startMins] = entry.start_time.split(':').map(Number)
-      const [endHours, endMins] = entry.end_time.split(':').map(Number)
-
-      let durationMinutes =
-        endHours * 60 + endMins - (startHours * 60 + startMins)
-      if (durationMinutes < 0) durationMinutes += 24 * 60 // Handle overnight
-
-      // Add to the daily total
-      totals[dateStr].minutes += durationMinutes
-      totals[dateStr].count += 1
-    })
-
-    // Sort the totals by date to ensure chronological order
-    const sortedTotals = {}
-    Object.keys(totals)
-      .sort((a, b) => a.localeCompare(b))
-      .forEach((dateStr) => {
-        sortedTotals[dateStr] = totals[dateStr]
-      })
-
-    dailyTotals.value = sortedTotals
+  function calculateDailyTotals(entries = weekEntries.value) {
+    const { start, end } = getCurrentWeekRange()
+    const minutes = effectiveMinutesByDate(entries, start, end)
+    const dates = new Set([
+      ...Object.keys(minutes),
+      ...weekEntries.value.map((entry) => entry.date),
+    ])
+    dailyTotals.value = Object.fromEntries(
+      [...dates].sort().map((date) => [
+        date,
+        {
+          minutes: minutes[date] || 0,
+          count: weekEntries.value.filter((entry) => entry.date === date)
+            .length,
+        },
+      ])
+    )
   }
 
   // Toggle display of entries for a specific day
@@ -217,7 +204,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
 
   // Validation functions
   function validateTimeIncrement(timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number)
+    const [, minutes] = timeStr.split(':').map(Number)
     return minutes % 5 === 0
   }
 

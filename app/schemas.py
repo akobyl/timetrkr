@@ -52,6 +52,15 @@ class TimeEntryCreate(TimeEntryBase):
     pass
 
 
+class TimeEntryImport(BaseModel):
+    entries: List[TimeEntryCreate] = Field(max_length=10000)
+
+
+class TimeEntryImportResult(BaseModel):
+    imported: int
+    skipped: int
+
+
 class TimeEntryResponse(BaseModel):
     """Schema for reading time entries - no validation applied"""
 

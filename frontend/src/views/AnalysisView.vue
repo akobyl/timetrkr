@@ -494,7 +494,7 @@
 
                   <div class="card-body text-center">
 
-                    <h5 class="card-title">Total Hours</h5>
+                    <h5 class="card-title" title="Overlapping entries count once; overnight work counts on its calendar date">Effective Hours</h5>
 
                     <p class="card-text display-6">
                        {{ totalHours.toFixed(1) }}
@@ -573,6 +573,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { apiService } from '../services/api'
+import { effectiveMinutesByDate } from '../utils/timeTotals.js'
 import { buildTimeHeatMap } from '../utils/timeHeatMap.js'
 import {
   Chart,
@@ -830,30 +831,9 @@ const fetchTimeData = async () => {
       )
     }
 
-    // Calculate daily total hours
+    const minutesByDate = effectiveMinutesByDate(entries, startDate.value, endDate.value)
     dailyHours.value = dateRange.map((date) => {
-      // Find entries for this date
-      const dayEntries = entries.filter((entry) => entry.date === date)
-
-      // Calculate total hours
-      let totalMinutes = 0
-      dayEntries.forEach((entry) => {
-        const startParts = entry.start_time.split(':').map(Number)
-        const endParts = entry.end_time.split(':').map(Number)
-
-        const startMinutes = startParts[0] * 60 + startParts[1]
-        let endMinutes = endParts[0] * 60 + endParts[1]
-
-        // Handle overnight entries
-        if (endMinutes < startMinutes) {
-          endMinutes += 24 * 60
-        }
-
-        totalMinutes += endMinutes - startMinutes
-      })
-
-      // Convert minutes to hours
-      const hours = totalMinutes / 60
+      const hours = (minutesByDate[date] || 0) / 60
 
       return {
         date: formatDate(date),
@@ -974,7 +954,7 @@ const fetchTimeData = async () => {
 
       // Check each of our predefined weeks
       let found = false
-      for (const [weekKey, weekData] of weekMap.entries()) {
+      for (const weekData of weekMap.values()) {
         // Check if this day falls within this week's range
         const weekStartDate = new Date(weekData.weekStart)
         const weekEndDate = new Date(weekData.weekEnd)

@@ -215,3 +215,16 @@ For issues, feature requests, or questions:
 ---
 
 **TimeTrkr** - Professional time tracking made simple.
+
+## Time totals and CSV imports
+
+Totals report effective elapsed time: overlapping entries and duplicates count
+each covered minute once. Entries remain individually editable. Overnight work
+is split across its actual calendar dates, and summaries include only time inside
+the selected dates. Entry/day counts describe entries starting within the range.
+
+CSV imports use `POST /time-entries/import` with `{"entries": [...]}`. Matching
+date, start time, and end time for the same user are skipped, including duplicates
+within a file. The batch is transactional and safe to retry; concurrent imports
+are serialized by SQLite's write lock. Manual entry creation still permits
+overlaps and duplicates. Existing records are preserved.

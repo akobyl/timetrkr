@@ -2,7 +2,9 @@ from sqlalchemy.orm import Session
 import app.models as models
 import app.schemas as schemas
 import app.auth as auth
-from datetime import date, time
+from datetime import date, timedelta
+from sqlalchemy import text
+from app.time_totals import effective_minutes
 
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -89,7 +91,7 @@ def get_time_summary(db: Session, user_id: int, start_date: date, end_date: date
         db.query(models.TimeEntry)
         .filter(
             models.TimeEntry.user_id == user_id,
-            models.TimeEntry.date >= start_date,
+            models.TimeEntry.date >= start_date - timedelta(days=1),
             models.TimeEntry.date <= end_date,
         )
         .all()
@@ -104,29 +106,45 @@ def get_time_summary(db: Session, user_id: int, start_date: date, end_date: date
             "days_with_entries": 0,
         }
 
-    # Calculate total minutes
-    total_minutes = 0
-    unique_days = set()
-
-    for entry in entries:
-        # Convert start and end times to minutes
-        start_minutes = entry.start_time.hour * 60 + entry.start_time.minute
-        end_minutes = entry.end_time.hour * 60 + entry.end_time.minute
-
-        # Handle overnight entries
-        if end_minutes < start_minutes:
-            end_minutes += 24 * 60
-
-        # Add duration to total
-        total_minutes += end_minutes - start_minutes
-
-        # Track unique days
-        unique_days.add(entry.date)
+    # Counts describe stored entries whose start date is in the range.
+    range_entries = [entry for entry in entries if entry.date >= start_date]
 
     return {
         "start_date": start_date,
         "end_date": end_date,
-        "total_minutes": total_minutes,
-        "entries_count": len(entries),
-        "days_with_entries": len(unique_days),
+        "total_minutes": effective_minutes(entries, start_date, end_date),
+        "entries_count": len(range_entries),
+        "days_with_entries": len({entry.date for entry in range_entries}),
     }
+
+
+def import_time_entries(db: Session, entries, user_id: int):
+    """Atomically import distinct entries; replaying a batch is safe.
+
+    SQLite's write lock serializes concurrent imports before checking for
+    duplicates. Existing rows (including duplicates) are preserved.
+    """
+    # Authentication may already have started a read transaction.
+    db.rollback()
+    try:
+        db.execute(text("BEGIN IMMEDIATE"))
+        existing = set(
+            db.query(
+                models.TimeEntry.date,
+                models.TimeEntry.start_time,
+                models.TimeEntry.end_time,
+            ).filter(models.TimeEntry.user_id == user_id).all()
+        )
+        imported = 0
+        for entry in entries:
+            key = (entry.date, entry.start_time, entry.end_time)
+            if key in existing:
+                continue
+            db.add(models.TimeEntry(**entry.model_dump(), user_id=user_id))
+            existing.add(key)
+            imported += 1
+        db.commit()
+        return {"imported": imported, "skipped": len(entries) - imported}
+    except Exception:
+        db.rollback()
+        raise

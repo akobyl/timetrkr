@@ -194,7 +194,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTimeEntriesStore } from '../stores/timeEntries'
-import { formatUtils } from '../services/api'
+import { apiService, formatUtils } from '../services/api'
 import EditTimeEntryModal from '../components/EditTimeEntryModal.vue'
 import { Modal } from 'bootstrap'
 import {
@@ -375,38 +375,13 @@ async function importFromCSV(event) {
 
     importStatus.value = 'Importing entries...'
 
-    // Import entries one by one
-    let successCount = 0
-    let failCount = 0
-
-    for (const entry of newEntries) {
-      try {
-        // Set the current entry in the store before saving
-        timeEntriesStore.currentEntry.date = entry.date
-        timeEntriesStore.currentEntry.startTime = entry.start_time
-        timeEntriesStore.currentEntry.endTime = entry.end_time
-
-        const result = await timeEntriesStore.saveTimeEntry()
-        if (result.success) {
-          successCount++
-        } else {
-          failCount++
-          console.error('Failed to import entry:', entry, result.error)
-        }
-      } catch (error) {
-        failCount++
-        console.error('Failed to import entry:', entry, error)
-      }
-    }
-
-    // Reload entries
+    const { data } = await apiService.post('/time-entries/import', {
+      entries: newEntries,
+    })
     await loadEntries()
+    await timeEntriesStore.loadTimeEntries()
 
-    // Show results
-    let resultMessage = `Import completed!\n${successCount} entries imported successfully.`
-    if (failCount > 0) {
-      resultMessage += `\n${failCount} entries failed to import.`
-    }
+    let resultMessage = `Import completed!\n${data.imported} entries imported successfully.\n${data.skipped} duplicate entries skipped.`
     if (errors.length > 0) {
       resultMessage += `\n${errors.length} rows were skipped due to validation errors.`
     }
