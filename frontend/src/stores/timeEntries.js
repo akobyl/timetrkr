@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiService } from '../services/api'
+import { apiService } from '../services/api.js'
 import { effectiveMinutesByDate } from '../utils/timeTotals.js'
 
 export const useTimeEntriesStore = defineStore('timeEntries', () => {
@@ -30,6 +30,25 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   const filterDate = ref(getLocalDateString().slice(0, 7))
   const sortDirection = ref('desc') // 'asc' or 'desc'
   const isLoadingEntries = ref(false)
+
+  const isLoadingDashboard = ref(false)
+  const dashboardError = ref('')
+  const hasDashboardData = ref(false)
+  const historyError = ref('')
+  const hasHistoryData = ref(false)
+  const loadedHistoryPeriod = ref('')
+
+  function errorMessage(error, fallback) {
+    const detail = error.response?.data?.detail
+    return typeof detail === 'string'
+      ? `${detail}. Please try again.`
+      : `${fallback}. Please try again.`
+  }
+
+  function requireEntries(data) {
+    if (!Array.isArray(data)) throw new Error('Invalid time entries response')
+    return data
+  }
 
   // Computed values
   const getDayEntries = computed(() => {
@@ -81,93 +100,45 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
 
   // Actions
   async function loadTimeEntries() {
+    if (isLoadingDashboard.value) return
+    isLoadingDashboard.value = true
+    dashboardError.value = ''
     try {
-      // Get today's date in local timezone
       const today = getLocalDateString()
-
-      // Load today's entries
-      const todayResponse = await apiService.get('/time-entries/', {
-        params: { entry_date: today },
-      })
-
-      // Ensure response data is an array
-      todayEntries.value = Array.isArray(todayResponse.data)
-        ? todayResponse.data
-        : []
-
-      // If data isn't an array, log error for debugging
-      if (!Array.isArray(todayResponse.data)) {
-        console.error('Today API response is not an array:', todayResponse.data)
-      }
-
-      // Get today's summary
-      const todaySummaryResponse = await apiService.get('/time-summary/', {
-        params: {
-          start_date: today,
-          end_date: today,
-        },
-      })
+      const { start, end } = getCurrentWeekRange()
+      const [
+        todayResponse,
+        todaySummaryResponse,
+        entriesResponse,
+        weekSummaryResponse,
+      ] = await Promise.all([
+        apiService.get('/time-entries/', { params: { entry_date: today } }),
+        apiService.get('/time-summary/', {
+          params: { start_date: today, end_date: today },
+        }),
+        apiService.get('/time-entries/'),
+        apiService.get('/time-summary/', {
+          params: { start_date: start, end_date: end },
+        }),
+      ])
+      // Commit a complete snapshot only after every request has succeeded.
+      const todayData = requireEntries(todayResponse.data)
+      const entries = requireEntries(entriesResponse.data)
+      todayEntries.value = todayData
+      weekEntries.value = sortTimeEntries(
+        entries.filter((entry) => entry.date >= start && entry.date <= end),
+        'asc'
+      )
       todaySummary.value = todaySummaryResponse.data
-
-      // Get the current week's date range (Monday to Sunday)
-      const weekRange = getCurrentWeekRange()
-      const startOfWeekStr = weekRange.start
-      const endOfWeekStr = weekRange.end
-
-      // Load all entries then filter client-side
-      const allEntriesResponse = await apiService.get('/time-entries/')
-
-      // Ensure all entries response data is an array
-      const allEntries = Array.isArray(allEntriesResponse.data)
-        ? allEntriesResponse.data
-        : []
-
-      // If data isn't an array, log error for debugging
-      if (!Array.isArray(allEntriesResponse.data)) {
-        console.error(
-          'All entries API response is not an array:',
-          allEntriesResponse.data
-        )
-      }
-
-      // Filter entries from the full week and sort by date
-      weekEntries.value = allEntries
-        .filter((entry) => {
-          const entryDate = String(entry.date)
-          const isInWeek =
-            entryDate >= startOfWeekStr && entryDate <= endOfWeekStr
-          return isInWeek
-        })
-        .sort((a, b) => {
-          // Sort by date ascending and then by start time
-          if (a.date !== b.date) {
-            return a.date < b.date ? -1 : 1
-          }
-          return a.start_time < b.start_time ? -1 : 1
-        })
-
-      // Reset expanded days when loading new data
-      expandedDays.value = []
-
-      // Calculate daily totals for the week
-      calculateDailyTotals(allEntries)
-
-      // Get weekly summary for the full week
-      const weekSummaryResponse = await apiService.get('/time-summary/', {
-        params: {
-          start_date: startOfWeekStr,
-          end_date: endOfWeekStr,
-        },
-      })
       weekSummary.value = weekSummaryResponse.data
+      calculateDailyTotals(entries)
+      hasDashboardData.value = true
+      return { success: true }
     } catch (error) {
-      console.error('Error loading time entries:', error)
-
-      // Ensure we have default values on error
-      todayEntries.value = []
-      weekEntries.value = []
-      todaySummary.value = null
-      weekSummary.value = null
+      dashboardError.value = errorMessage(error, 'Unable to load time entries')
+      return { success: false, error: dashboardError.value }
+    } finally {
+      isLoadingDashboard.value = false
     }
   }
 
@@ -251,6 +222,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     }
   }
 
+  // Mutation results describe the write only. Callers refresh separately after success.
   async function saveTimeEntry() {
     try {
       // Validate entry before sending
@@ -270,16 +242,14 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
 
       await apiService.post('/time-entries/', payload)
 
-      // Reset form and reload data
       resetForm()
-      await loadTimeEntries()
 
       return { success: true }
     } catch (error) {
       console.error('Error saving time entry:', error)
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to save time entry',
+        error: errorMessage(error, 'Failed to save time entry'),
       }
     }
   }
@@ -300,13 +270,12 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
       }
 
       await apiService.put(`/time-entries/${id}`, entryData)
-      await loadTimeEntries()
       return { success: true }
     } catch (error) {
       console.error('Error updating time entry:', error)
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to update time entry',
+        error: errorMessage(error, 'Failed to update time entry'),
       }
     }
   }
@@ -314,13 +283,15 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   async function deleteTimeEntry(id) {
     try {
       await apiService.delete(`/time-entries/${id}`)
-      await loadTimeEntries()
+      todayEntries.value = todayEntries.value.filter((entry) => entry.id !== id)
+      weekEntries.value = weekEntries.value.filter((entry) => entry.id !== id)
+      allEntries.value = allEntries.value.filter((entry) => entry.id !== id)
       return { success: true }
     } catch (error) {
       console.error('Error deleting time entry:', error)
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to delete time entry',
+        error: errorMessage(error, 'Failed to delete time entry'),
       }
     }
   }
@@ -382,6 +353,7 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
   async function loadAllTimeEntries(showAll = false) {
     try {
       isLoadingEntries.value = true
+      historyError.value = ''
 
       let response
 
@@ -396,24 +368,18 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
         response = await apiService.get('/time-entries/')
       }
 
-      // Ensure response.data is an array
-      const entries = Array.isArray(response.data) ? response.data : []
-
-      // If data isn't an array, log error for debugging
-      if (!Array.isArray(response.data)) {
-        console.error('API response is not an array:', response.data)
-      }
-
-      // Sort entries
+      const entries = requireEntries(response.data)
       allEntries.value = sortTimeEntries(entries, sortDirection.value)
+      hasHistoryData.value = true
+      loadedHistoryPeriod.value = showAll ? 'All entries' : filterDate.value
 
       return { success: true }
     } catch (error) {
       console.error('Error loading all time entries:', error)
-      allEntries.value = [] // Ensure we set an empty array on error
+      historyError.value = errorMessage(error, 'Unable to load time entries')
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to load time entries',
+        error: historyError.value,
       }
     } finally {
       isLoadingEntries.value = false
@@ -461,6 +427,12 @@ export const useTimeEntriesStore = defineStore('timeEntries', () => {
     filterDate,
     sortDirection,
     isLoadingEntries,
+    isLoadingDashboard,
+    dashboardError,
+    hasDashboardData,
+    historyError,
+    hasHistoryData,
+    loadedHistoryPeriod,
     getDayEntries,
     loadTimeEntries,
     loadAllTimeEntries,

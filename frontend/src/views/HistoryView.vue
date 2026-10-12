@@ -69,8 +69,37 @@
       </div>
 
       <div class="card-body p-0">
+
+        <div class="p-3">
+           <LoadStatus
+            :loading="timeEntriesStore.isLoadingEntries"
+            :error="timeEntriesStore.historyError"
+            :has-data="timeEntriesStore.hasHistoryData"
+            @retry="loadEntries"
+          />
+          <p
+            v-if="
+              timeEntriesStore.historyError && timeEntriesStore.hasHistoryData
+            "
+          >
+             Displayed period: {{ timeEntriesStore.loadedHistoryPeriod }}
+          </p>
+
+          <div v-if="deleteError" class="alert alert-danger" role="alert">
+             {{ deleteError }}
+          </div>
+
+          <p v-if="mutationStatus" role="status">{{ mutationStatus }}</p>
+
+        </div>
          <!-- Loading state -->
-        <div v-if="timeEntriesStore.isLoadingEntries" class="text-center py-5">
+        <div
+          v-if="
+            timeEntriesStore.isLoadingEntries &&
+            !timeEntriesStore.hasHistoryData
+          "
+          class="text-center py-5"
+        >
 
           <div class="spinner-border text-primary" role="status">
              <span class="visually-hidden">Loading...</span>
@@ -81,7 +110,11 @@
         </div>
          <!-- Empty state -->
         <div
-          v-else-if="timeEntriesStore.allEntries.length === 0"
+          v-else-if="
+            timeEntriesStore.hasHistoryData &&
+            !timeEntriesStore.historyError &&
+            timeEntriesStore.allEntries.length === 0
+          "
           class="text-center py-5"
         >
            <i class="bi bi-clock-history" style="font-size: 3rem"></i> <br /><br />
@@ -90,7 +123,10 @@
 
         </div>
          <!-- Entries table -->
-        <div v-else class="table-responsive">
+        <div
+          v-else-if="timeEntriesStore.allEntries.length > 0"
+          class="table-responsive"
+        >
 
           <table class="table table-striped table-hover mb-0">
 
@@ -143,6 +179,9 @@
                     > <button
                       class="btn btn-outline-danger"
                       @click="confirmDelete(entry.id)"
+                      :disabled="
+                        isDeleting || timeEntriesStore.isLoadingEntries
+                      "
                       title="Delete"
                     >
                        <i class="bi bi-trash"></i> </button
@@ -175,8 +214,7 @@
            <span
             class="badge"
             :class="showAllEntries ? 'bg-primary' : 'bg-info'"
-            > {{ showAllEntries ? 'All Entries' : timeEntriesStore.filterDate }}
-            </span
+            > {{ timeEntriesStore.loadedHistoryPeriod }} </span
           >
         </div>
 
@@ -195,6 +233,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTimeEntriesStore } from '../stores/timeEntries'
 import { apiService, formatUtils } from '../services/api'
+import LoadStatus from '../components/LoadStatus.vue'
 import EditTimeEntryModal from '../components/EditTimeEntryModal.vue'
 import { Modal } from 'bootstrap'
 import {
@@ -204,6 +243,9 @@ import {
 
 const timeEntriesStore = useTimeEntriesStore()
 const editingEntry = ref(null)
+const deleteError = ref('')
+const mutationStatus = ref('')
+const isDeleting = ref(false)
 const showAllEntries = ref(false)
 const importStatus = ref('')
 const importError = ref('')
@@ -280,15 +322,30 @@ function editEntry(entry) {
 
 // Handle entry updated
 function onEntryUpdated() {
+  mutationStatus.value = 'Entry updated.'
   loadEntries()
 }
 
 // Confirm and delete entry
-function confirmDelete(id) {
-  if (confirm('Are you sure you want to delete this time entry?')) {
-    timeEntriesStore.deleteTimeEntry(id).then(() => {
-      loadEntries()
-    })
+async function confirmDelete(id) {
+  if (
+    isDeleting.value ||
+    !confirm('Are you sure you want to delete this time entry?')
+  )
+    return
+  isDeleting.value = true
+  deleteError.value = ''
+  mutationStatus.value = ''
+  try {
+    const result = await timeEntriesStore.deleteTimeEntry(id)
+    if (!result.success) {
+      deleteError.value = result.error
+      return
+    }
+    mutationStatus.value = 'Entry deleted.'
+    await loadEntries()
+  } finally {
+    isDeleting.value = false
   }
 }
 

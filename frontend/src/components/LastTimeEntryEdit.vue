@@ -10,6 +10,8 @@
 
     <div class="card-body">
 
+      <p v-if="successMessage" role="status">{{ successMessage }}</p>
+
       <form @submit.prevent="updateEntry">
 
         <div class="row">
@@ -88,7 +90,11 @@
              <button
               type="submit"
               class="btn btn-primary btn-sm"
-              :disabled="isUpdating || !validation.isValid"
+              :disabled="
+                isUpdating ||
+                timeEntriesStore.isLoadingDashboard ||
+                !validation.isValid
+              "
             >
                {{ isUpdating ? 'Updating...' : 'Update' }} </button
             > <button
@@ -138,6 +144,7 @@ import { useTimeEntriesStore } from '../stores/timeEntries'
 const timeEntriesStore = useTimeEntriesStore()
 const isUpdating = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
 
 // Get the most recent entry from all entries
 const lastEntry = computed(() => {
@@ -159,6 +166,7 @@ const lastEntry = computed(() => {
 
 // Editable copy of the last entry
 const editEntry = ref({
+  id: null,
   date: '',
   start_time: '',
   end_time: '',
@@ -168,8 +176,9 @@ const editEntry = ref({
 watch(
   lastEntry,
   (newEntry) => {
-    if (newEntry) {
+    if (newEntry && !errorMessage.value) {
       editEntry.value = {
+        id: newEntry.id,
         date: newEntry.date,
         start_time: newEntry.start_time,
         end_time: newEntry.end_time,
@@ -194,11 +203,12 @@ const validation = computed(() => {
 })
 
 async function updateEntry() {
-  if (!lastEntry.value) return
+  if (!lastEntry.value || isUpdating.value) return
 
   try {
     isUpdating.value = true
     errorMessage.value = ''
+    successMessage.value = ''
 
     // Validate entry before updating
     if (!validation.value.isValid) {
@@ -212,7 +222,15 @@ async function updateEntry() {
       end_time: editEntry.value.end_time,
     }
 
-    await timeEntriesStore.updateTimeEntry(lastEntry.value.id, payload)
+    const result = await timeEntriesStore.updateTimeEntry(
+      editEntry.value.id,
+      payload
+    )
+    if (!result.success) {
+      errorMessage.value = result.error
+      return
+    }
+    successMessage.value = 'Entry updated.'
     await timeEntriesStore.loadTimeEntries()
   } catch (error) {
     console.error('Error updating last entry:', error)
@@ -225,6 +243,7 @@ async function updateEntry() {
 function resetEdit() {
   if (lastEntry.value) {
     editEntry.value = {
+      id: lastEntry.value.id,
       date: lastEntry.value.date,
       start_time: lastEntry.value.start_time,
       end_time: lastEntry.value.end_time,

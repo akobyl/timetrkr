@@ -23,6 +23,12 @@
 
     <div class="card-body">
 
+      <div v-if="deleteError" class="alert alert-danger" role="alert">
+         {{ deleteError }}
+      </div>
+
+      <p v-if="deleteStatus" role="status">{{ deleteStatus }}</p>
+
       <div
         v-if="timeEntriesStore.todayEntries.length === 0"
         class="text-center py-4"
@@ -68,6 +74,7 @@
                <button
                 class="btn btn-sm btn-outline-danger"
                 @click="confirmDelete(entry.id)"
+                :disabled="isDeleting || timeEntriesStore.isLoadingDashboard"
               >
                  Delete</button
               >
@@ -86,11 +93,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useTimeEntriesStore } from '../stores/timeEntries'
 import { formatUtils } from '../services/api'
 
 const timeEntriesStore = useTimeEntriesStore()
+const deleteError = ref('')
+const deleteStatus = ref('')
+const isDeleting = ref(false)
 
 // Sort today's entries by start time (earliest to latest)
 const sortedTodayEntries = computed(() => {
@@ -99,9 +109,25 @@ const sortedTodayEntries = computed(() => {
   })
 })
 
-function confirmDelete(id) {
-  if (confirm('Are you sure you want to delete this time entry?')) {
-    timeEntriesStore.deleteTimeEntry(id)
+async function confirmDelete(id) {
+  if (
+    isDeleting.value ||
+    !confirm('Are you sure you want to delete this time entry?')
+  )
+    return
+  isDeleting.value = true
+  deleteError.value = ''
+  deleteStatus.value = ''
+  try {
+    const result = await timeEntriesStore.deleteTimeEntry(id)
+    if (!result.success) {
+      deleteError.value = result.error
+      return
+    }
+    deleteStatus.value = 'Entry deleted.'
+    await timeEntriesStore.loadTimeEntries()
+  } finally {
+    isDeleting.value = false
   }
 }
 </script>

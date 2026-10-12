@@ -19,6 +19,10 @@
 
         <div class="modal-body" v-if="entry">
 
+          <div v-if="errorMessage" class="alert alert-danger" role="alert">
+             {{ errorMessage }}
+          </div>
+
           <form id="editEntryForm" @submit.prevent="updateEntry">
 
             <div class="mb-3">
@@ -160,8 +164,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, defineProps, defineEmits } from 'vue'
-import { apiService, formatUtils } from '../services/api'
+import { ref, computed, watch } from 'vue'
+import { formatUtils } from '../services/api'
+import { useTimeEntriesStore } from '../stores/timeEntries'
 import { Modal } from 'bootstrap'
 
 const props = defineProps({
@@ -173,7 +178,15 @@ const props = defineProps({
 
 const emits = defineEmits(['update', 'close'])
 
+const timeEntriesStore = useTimeEntriesStore()
 const isSubmitting = ref(false)
+const errorMessage = ref('')
+watch(
+  () => props.entry,
+  () => {
+    errorMessage.value = ''
+  }
+)
 
 // Calculate duration preview
 const durationPreview = computed(() => {
@@ -232,15 +245,24 @@ function setTimeToNow(type) {
 }
 
 async function updateEntry() {
+  if (!props.entry || isSubmitting.value) return
   try {
     isSubmitting.value = true
+    errorMessage.value = ''
     const payload = {
       date: props.entry.date,
       start_time: props.entry.start_time,
       end_time: props.entry.end_time,
     }
 
-    await apiService.put(`/time-entries/${props.entry.id}`, payload)
+    const result = await timeEntriesStore.updateTimeEntry(
+      props.entry.id,
+      payload
+    )
+    if (!result.success) {
+      errorMessage.value = result.error
+      return
+    }
 
     // Close the modal
     const modalEl = document.getElementById('editEntryModal')
@@ -251,6 +273,7 @@ async function updateEntry() {
     emits('update')
   } catch (error) {
     console.error('Error updating time entry:', error)
+    errorMessage.value = 'Failed to update time entry. Please try again.'
   } finally {
     isSubmitting.value = false
   }

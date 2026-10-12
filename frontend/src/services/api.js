@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { formatMinutes, calculateDurationMinutes } from '../utils/timeUtils'
+import { formatMinutes, calculateDurationMinutes } from '../utils/timeUtils.js'
 
 // Determine if we're in production or development based on environment or URL
 const isProd =
@@ -33,13 +33,14 @@ apiService.interceptors.response.use(
   (response) => {
     // Validate that list endpoints return arrays
     const url = response.config.url
-    // If endpoint should return an array but doesn't, convert to empty array and log error
+    // Reject invalid list responses so callers can display an error.
     if (
+      response.config.method === 'get' &&
       (url.endsWith('/time-entries/') || url.endsWith('/time-entries')) &&
       !Array.isArray(response.data)
     ) {
       console.error('Expected array response from API but got:', response.data)
-      response.data = [] // Ensure we always return an array for endpoints that should return arrays
+      return Promise.reject(new Error('Invalid time entries response'))
     }
     return response
   },

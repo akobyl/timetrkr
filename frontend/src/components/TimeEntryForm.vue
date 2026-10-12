@@ -10,6 +10,8 @@
 
     <div class="card-body">
 
+      <p v-if="successMessage" role="status">{{ successMessage }}</p>
+
       <form @submit.prevent="saveEntry">
 
         <div class="row mb-3">
@@ -37,14 +39,14 @@
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="10"
-                  @click="timeEntriesStore.adjustTime('start', -15); updateEndTime()"
+                  @click="adjustStartTime(-15)"
                 >
                    -15m</button
                 > <button
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="11"
-                  @click="timeEntriesStore.adjustTime('start', -5); updateEndTime()"
+                  @click="adjustStartTime(-5)"
                 >
                    -5m</button
                 >
@@ -62,14 +64,14 @@
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="12"
-                  @click="timeEntriesStore.adjustTime('start', 5); updateEndTime()"
+                  @click="adjustStartTime(5)"
                 >
                    +5m</button
                 > <button
                   type="button"
                   class="btn btn-outline-secondary btn-sm"
                   tabindex="13"
-                  @click="timeEntriesStore.adjustTime('start', 15); updateEndTime()"
+                  @click="adjustStartTime(15)"
                 >
                    +15m</button
                 >
@@ -78,7 +80,7 @@
                 type="button"
                 class="btn btn-outline-primary ms-2"
                 tabindex="14"
-                @click="timeEntriesStore.setTimeToNow('start'); updateEndTime()"
+                @click="setStartTimeToNow"
               >
                  Now</button
               >
@@ -170,7 +172,11 @@
            <button
             type="submit"
             class="btn btn-primary"
-            :disabled="isSubmitting || !validation.isValid"
+            :disabled="
+              isSubmitting ||
+              timeEntriesStore.isLoadingDashboard ||
+              !validation.isValid
+            "
           >
              {{ isSubmitting ? 'Saving...' : 'Save Time Entry' }}</button
           > <button
@@ -197,8 +203,19 @@ import { useTimeEntriesStore } from '../stores/timeEntries'
 const timeEntriesStore = useTimeEntriesStore()
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
 
 const validation = computed(() => timeEntriesStore.validateEntry())
+
+function adjustStartTime(minutes) {
+  timeEntriesStore.adjustTime('start', minutes)
+  updateEndTime()
+}
+
+function setStartTimeToNow() {
+  timeEntriesStore.setTimeToNow('start')
+  updateEndTime()
+}
 
 function updateEndTime() {
   if (timeEntriesStore.currentEntry.startTime) {
@@ -218,13 +235,18 @@ function updateEndTime() {
 }
 
 async function saveEntry() {
+  if (isSubmitting.value) return
   try {
     isSubmitting.value = true
     errorMessage.value = ''
+    successMessage.value = ''
 
     const result = await timeEntriesStore.saveTimeEntry()
     if (!result.success) {
       errorMessage.value = result.error
+    } else {
+      successMessage.value = 'Entry saved.'
+      await timeEntriesStore.loadTimeEntries()
     }
   } finally {
     isSubmitting.value = false
